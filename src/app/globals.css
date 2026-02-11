@@ -1,26 +1,44 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Urbanist:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(255, 43, 209, 0.22), transparent 46%),
+    radial-gradient(circle at 90% 10%, rgba(38, 247, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 65% 80%, rgba(255, 216, 59, 0.15), transparent 42%),
+    linear-gradient(180deg, #07060a 0%, #0d0b17 50%, #08060d 100%);
+  color: #f7f3ff;
+  font-family: "Urbanist", "Avenir Next", "Helvetica Neue", sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: "Syne", "Space Grotesk", "Avenir Next", sans-serif;
+}
+
+.glass {
+  background: rgba(18, 16, 30, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.neon-card {
+  background: rgba(15, 13, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35);
+  border-radius: 20px;
+}
+
+.neon-button {
+  background: linear-gradient(120deg, #ff2bd1, #26f7ff);
+  color: #0c0913;
+  box-shadow: 0 14px 36px rgba(255, 43, 209, 0.25);
+}
+
+.neon-input {
+  background: #0f0d19;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }

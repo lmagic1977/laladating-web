@@ -1,0 +1,34 @@
+{
+  "events": [
+    {
+      "id": "hb-0215",
+      "title": "海边夜场 · 20-30",
+      "date": "2026-02-15",
+      "time": "20:00",
+      "location": "Huntington Beach, Dance Studio",
+      "price": "$39",
+      "seats": 60,
+      "status": "Open"
+    },
+    {
+      "id": "hb-0222",
+      "title": "周末特场 · 25-35",
+      "date": "2026-02-22",
+      "time": "19:30",
+      "location": "HB Main St",
+      "price": "$45",
+      "seats": 80,
+      "status": "Open"
+    }
+  ],
+  "attendees": [],
+  "registrations": [],
+  "admins": [
+    {
+      "id": "admin-1",
+      "name": "Owner",
+      "email": "owner@laladating.com",
+      "role": "super"
+    }
+  ]
+}
