@@ -1,25 +1,27 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { LanguageProvider } from "@/lib/LanguageContext";
-import { SiteShell } from "@/app/site-shell";
+import type { Metadata } from 'next';
+import './globals.css';
+import { LanguageProvider } from '@/lib/LanguageContext';
+import { SiteShell } from './site-shell';
 
 export const metadata: Metadata = {
-  title: "LALA Speed Dating",
-  description: "Huntington Beach speed dating events",
+  title: 'LALA Speed Dating - Find Your Perfect Match',
+  description: 'Meet like-minded singles in a fun, relaxed environment at LALA Speed Dating events.',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="zh">
-      <body>
-        <LanguageProvider>
-          <SiteShell>{children}</SiteShell>
-        </LanguageProvider>
-      </body>
-    </html>
+    <LanguageProvider>
+      <html lang="en">
+        <body>
+          <SiteShell>
+            {children}
+          </SiteShell>
+        </body>
+      </html>
+    </LanguageProvider>
   );
 }
