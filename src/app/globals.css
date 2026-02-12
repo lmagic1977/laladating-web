@@ -315,3 +315,93 @@ footer {
 .form-group textarea {
   width: 100%;
 }
+
+/* Admin Table Styles */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-open {
+  background: rgba(38, 247, 255, 0.2);
+  color: #67e8f9;
+}
+
+.status-full {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.status-closed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Action Links */
+.action-link {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 1rem;
+  transition: color 0.2s;
+}
+
+.action-link:hover {
+  color: white;
+}
+
+.action-link-delete:hover {
+  color: #f87171;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.notification-badge {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
