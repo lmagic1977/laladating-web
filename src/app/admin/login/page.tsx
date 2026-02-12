@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: "Login failed" }));
@@ -33,9 +34,19 @@ export default function AdminLoginPage() {
       <div className="neon-card p-6">
         <h1 className="text-2xl font-semibold">Admin Login / 管理员登录</h1>
         <p className="mt-2 text-sm text-white/60">
-          Enter admin password to access dashboard.
+          Enter admin email and password to access dashboard.
         </p>
         <form onSubmit={onSubmit} className="mt-5 space-y-4">
+          <div>
+            <label className="mb-2 block text-sm text-white/70">Email / 邮箱</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 outline-none focus:border-pink-500"
+              required
+            />
+          </div>
           <div>
             <label className="mb-2 block text-sm text-white/70">Password / 密码</label>
             <input
@@ -59,4 +70,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-

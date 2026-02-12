@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { ADMIN_AUTH_COOKIE } from "@/lib/admin-auth";
+import { ADMIN_AUTH_COOKIE, getAdminSessionValue } from "@/lib/admin-auth";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,7 +10,8 @@ export function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith("/admin")) {
-    const isAuthed = request.cookies.get(ADMIN_AUTH_COOKIE)?.value === "ok";
+    const isAuthed =
+      request.cookies.get(ADMIN_AUTH_COOKIE)?.value === getAdminSessionValue();
     if (!isAuthed) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
@@ -24,4 +25,3 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/admin/:path*"],
 };
-
