@@ -1,0 +1,71 @@
+/* ============================================
+   LALA Speed Dating - Bilingual Support
+   在 globals.css 中添加这些样式
+   ============================================ */
+
+/* Language Toggle - Add to layout */
+.lang-toggle {
+  position: relative;
+  display: inline-flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.1);
+  padding: 4px;
+  border-radius: 20px;
+}
+
+.lang-toggle button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.lang-toggle button.active {
+  background: #FF6B6B;
+  color: white;
+}
+
+.lang-toggle button:not(.active) {
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Bilingual Text - Add data-lang attributes in HTML */
+[data-lang="zh"] .lang-en { display: none; }
+[data-lang="en"] .lang-zh { display: none; }
+
+/* Example usage in HTML:
+   <span class="lang-zh">首页</span>
+   <span class="lang-en">Home</span>
+*/
+
+/* Or use ::after content for clean approach */
+.bilingual-zh::before { content: attr(data-zh); }
+.bilingual-en::before { content: attr(data-en); }
+[data-lang="zh"] .bilingual-en::before { content: none; }
+[data-lang="en"] .bilingual-zh::before { content: none; }
+
+/* Quick toggle button for header */
+#lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  color: white;
+}
+
+#lang-switch span {
+  opacity: 0.6;
+}
+
+#lang-switch span.active {
+  opacity: 1;
+  font-weight: 600;
+}

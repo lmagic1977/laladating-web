@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <!-- 背景 -->
+  <defs>
+    <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF4757;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lightningGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFE066;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 心形 -->
+  <path d="M35 35 C35 20, 55 10, 70 25 C85 10, 105 20, 105 35 C105 55, 70 80, 70 80 C70 80, 35 55, 35 35 Z" 
+        fill="url(#heartGrad)" transform="scale(0.6) translate(10, 10)"/>
+
+  <!-- 闪电 -->
+  <polygon points="55,15 75,15 65,40 80,40 50,80 60,50 45,50" 
+           fill="url(#lightningGrad)" 
+           stroke="#E6A800" stroke-width="2"
+           transform="scale(0.5) translate(130, 25) rotate(-15)"/>
+
+  <!-- 文字 LALA -->
+  <text x="100" y="65" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#2D3436">LALA</text>
+
+  <!-- 文字 DATING -->
+  <text x="195" y="65" font-family="Arial, sans-serif" font-size="40" font-weight="300" fill="#636E72">DATING</text>
+</svg>
