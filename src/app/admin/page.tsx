@@ -126,16 +126,29 @@ export default function AdminPage() {
     a.click();
   };
 
+  const handleLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" });
+    window.location.href = "/admin/login";
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-semibold">{t('admin.title')}</h1>
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="rounded-full px-4 py-2 text-sm font-semibold neon-button"
-        >
-          {showCreateForm ? t('common.cancel') : t('admin.create_event')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="rounded-full px-4 py-2 text-sm font-semibold neon-button"
+          >
+            {showCreateForm ? t('common.cancel') : t('admin.create_event')}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="rounded-full px-4 py-2 text-sm font-semibold border border-white/30 text-white/80 hover:bg-white/10"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
