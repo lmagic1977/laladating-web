@@ -19,7 +19,6 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <a href="/events" className="hover:text-white">{t('nav.events')}</a>
             <a href="/register" className="hover:text-white">{t('nav.register')}</a>
             <a href="/onsite" className="hover:text-white">{t('nav.onsite')}</a>
-            <a href="/admin" className="hover:text-white">{t('nav.admin')}</a>
           </nav>
           <div className="flex items-center gap-2">
             <LangToggle />
