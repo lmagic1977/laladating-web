@@ -8,10 +8,10 @@ export default function HomePage() {
     <div className="space-y-12">
       <section className="grid gap-10 lg:grid-cols-2">
         <div>
-          <h1 className="text-4xl font-bold leading-tight md:text-5xl">
+          <h1 className="text-4xl font-bold leading-tight md:text-5xl text-pink-300 drop-shadow-[0_0_14px_rgba(255,120,181,0.55)]">
             {t('home.hero_title')}
-          </h1>
-          <p className="mt-4 text-base text-white/70">
+          <h1 className="text-4xl font-bold leading-tight md:text-5xl text-pink-300 drop-shadow-[0_0_14px_rgba(255,120,181,0.55)]">
+
             {t('home.hero_subtitle')}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -27,7 +27,7 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs uppercase text-white/80">
             {t('home.next_event')}
           </div>
-          <h3 className="mt-4 text-xl font-semibold">Speed Dating · 20-30</h3>
+          <h3 className="mt-4 text-xl font-semibold text-pink-200">Speed Dating · 20-30</h3>
           <p className="mt-1 text-sm text-white/60">Dance Studio · 20:00</p>
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
@@ -49,7 +49,7 @@ export default function HomePage() {
 
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">{t('home.upcoming')}</h2>
+          <h2 className="text-2xl font-semibold text-pink-300 drop-shadow-[0_0_10px_rgba(255,120,181,0.45)]">{t('home.upcoming')}</h2>
           <a href="/events" className="text-sm text-white/60 hover:text-white">
             {t('events.all')}
           </a>
@@ -62,7 +62,7 @@ export default function HomePage() {
           ].map((event) => (
             <div key={`${event.title}-${event.time}`} className="neon-card p-5">
               <div className="text-xs uppercase text-cyan-300">{t('events.open')}</div>
-              <h3 className="mt-3 text-lg font-semibold">{event.title}</h3>
+              <h3 className="mt-3 text-lg font-semibold text-white">{event.title}</h3>
               <p className="mt-1 text-sm text-white/60">{t('events.location')}</p>
               <div className="mt-4 flex items-center justify-between text-xs text-white/60">
                 <span>{event.time}</span>
@@ -75,7 +75,7 @@ export default function HomePage() {
 
       <section className="grid gap-6 md:grid-cols-2">
         <div className="neon-card p-6">
-          <h3 className="text-lg font-semibold">{t('how.title')}</h3>
+          <h3 className="text-lg font-semibold text-pink-300">{t('how.title')}</h3>
           <ul className="mt-4 space-y-3 text-sm text-white/70">
             <li>{t('how.step1_title')}: {t('how.step1_desc')}</li>
             <li>{t('how.step2_title')}: {t('how.step2_desc')}</li>
@@ -84,7 +84,7 @@ export default function HomePage() {
           </ul>
         </div>
         <div className="neon-card p-6">
-          <h3 className="text-lg font-semibold">{t('features.title')}</h3>
+          <h3 className="text-lg font-semibold text-pink-300">{t('features.title')}</h3>
           <ul className="mt-4 space-y-3 text-sm text-white/70">
             <li>💕 {t('features.crush')}: {t('features.crush_desc')}</li>
             <li>🗳️ {t('features.vote')}: {t('features.vote_desc')}</li>

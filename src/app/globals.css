@@ -4,13 +4,23 @@
 
 :root {
   --neon-pink: #ff2d55;
+  --youth-pink: #ff78b5;
+  --youth-pink-strong: #ff4fa1;
   --neon-cyan: #22d3ee;
   --neon-yellow: #facc15;
 }
 
 body {
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+  color: #fdf7ff;
   min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--youth-pink);
+  text-shadow: 0 0 16px rgba(255, 79, 161, 0.35);
 }
 
 @layer components {
