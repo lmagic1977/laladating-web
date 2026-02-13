@@ -13,8 +13,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const data = await request.json();
+  const lookingFor = data.looking_for || data.lookingFor;
+  const eventId = Number(data.event_id || data.eventId || 1);
   
-  if (!data.name || !data.email || !data.phone || !data.age || !data.gender || !data.looking_for) {
+  if (!data.name || !data.email || !data.phone || !data.age || !data.gender || !lookingFor) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
   
@@ -24,8 +26,8 @@ export async function POST(request: Request) {
     phone: data.phone,
     age: parseInt(data.age),
     gender: data.gender,
-    looking_for: data.looking_for,
-    event_id: data.event_id || 1,
+    looking_for: lookingFor,
+    event_id: eventId,
   });
   
   return NextResponse.json(registration);

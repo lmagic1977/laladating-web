@@ -15,12 +15,14 @@ export default function RegisterPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.gender || !formData.lookingFor) {
       setError(true);
+      setErrorMessage(t('register.error'));
       return;
     }
 
@@ -34,10 +36,16 @@ export default function RegisterPage() {
       if (response.ok) {
         setSubmitted(true);
         setError(false);
+        setErrorMessage('');
+      } else {
+        const data = await response.json().catch(() => ({ error: t('register.error') }));
+        setError(true);
+        setErrorMessage(data.error || t('register.error'));
       }
     } catch (err) {
       console.error('Registration failed:', err);
       setError(true);
+      setErrorMessage(t('register.error'));
     }
   };
 
@@ -63,7 +71,7 @@ export default function RegisterPage() {
 
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300">
-          {t('register.error')}
+          {errorMessage || t('register.error')}
         </div>
       )}
 
