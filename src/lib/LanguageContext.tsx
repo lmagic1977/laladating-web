@@ -69,12 +69,25 @@ export function LangToggle() {
   const { locale, setLocale } = useLanguage();
 
   return (
-    <button
-      onClick={() => setLocale(locale === 'en' ? 'zh' : 'en')}
-      className="rounded-lg px-3 py-1 text-sm text-white/70 hover:bg-white/10 transition-colors"
-      aria-label="Toggle language"
-    >
-      {locale === 'en' ? 'EN' : '中文'}
-    </button>
+    <div className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/5 p-1">
+      <button
+        onClick={() => setLocale('zh')}
+        className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+          locale === 'zh' ? 'bg-pink-500 text-white' : 'text-white/80 hover:bg-white/10'
+        }`}
+        aria-label="Switch to Chinese"
+      >
+        中文
+      </button>
+      <button
+        onClick={() => setLocale('en')}
+        className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+          locale === 'en' ? 'bg-pink-500 text-white' : 'text-white/80 hover:bg-white/10'
+        }`}
+        aria-label="Switch to English"
+      >
+        ENGLISH
+      </button>
+    </div>
   );
 }
