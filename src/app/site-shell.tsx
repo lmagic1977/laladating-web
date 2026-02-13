@@ -14,11 +14,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               💕
             </div>
           </a>
-          <nav className="hidden items-center gap-6 text-sm text-white/70 md:flex">
-            <a href="/" className="hover:text-white">{t('nav.home')}</a>
-            <a href="/events" className="hover:text-white">{t('nav.events')}</a>
-            <a href="/register" className="hover:text-white">{t('nav.register')}</a>
-            <a href="/onsite" className="hover:text-white">{t('nav.onsite')}</a>
+          <nav className="hidden md:flex flex-1 max-w-2xl mx-8 items-center justify-between text-base font-semibold text-white/80">
+            <a href="/" className="flex-1 text-center hover:text-white">{t('nav.home')}</a>
+            <a href="/events" className="flex-1 text-center hover:text-white">{t('nav.events')}</a>
+            <a href="/register" className="flex-1 text-center hover:text-white">{t('nav.register')}</a>
+            <a href="/onsite" className="flex-1 text-center hover:text-white">{t('nav.onsite')}</a>
           </nav>
           <div className="flex items-center gap-2">
             <LangToggle />
