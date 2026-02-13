@@ -76,6 +76,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'register.submit': 'Complete Registration',
     'register.success': 'Registration successful! We\'ll see you at the event.',
     'register.error': 'Please fill in all required fields.',
+    'register.duplicate': 'You are already registered for this event.',
 
     // Onsite Page
     'onsite.title': 'LALA Speed Dating',
@@ -121,6 +122,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'admin.matched': 'Matched',
     'admin.mutual': 'Mutual Match',
     'admin.one_sided': 'One-sided Interest',
+    'admin.duplicate_event': 'This event already exists (same name/date/time).',
 
     // Common
     'common.loading': 'Loading...',
@@ -208,6 +210,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'register.submit': '完成报名',
     'register.success': '报名成功！我们活动见。',
     'register.error': '请填写所有必填项。',
+    'register.duplicate': '您已报名该活动，请勿重复提交。',
 
     // Onsite Page
     'onsite.title': 'LALA 极速相亲',
@@ -253,6 +256,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'admin.matched': '已匹配',
     'admin.mutual': '互相喜欢',
     'admin.one_sided': '单方面好感',
+    'admin.duplicate_event': '该活动已存在（同名+同日期+同时间）。',
 
     // Common
     'common.loading': '加载中...',

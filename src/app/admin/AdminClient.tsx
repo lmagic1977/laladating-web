@@ -86,6 +86,19 @@ export default function AdminPage() {
 
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedName = newEvent.name.trim().toLowerCase();
+    const alreadyExists = events.some(
+      (item) =>
+        item.name.trim().toLowerCase() === normalizedName &&
+        item.date === newEvent.date &&
+        item.time === newEvent.time
+    );
+
+    if (alreadyExists) {
+      alert(t('admin.duplicate_event'));
+      return;
+    }
+
     const event: Event = {
       id: Date.now(),
       ...newEvent,

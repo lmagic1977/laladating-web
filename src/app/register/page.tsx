@@ -14,11 +14,13 @@ export default function RegisterPage() {
     lookingFor: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     
     if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.gender || !formData.lookingFor) {
       setError(true);
@@ -27,6 +29,7 @@ export default function RegisterPage() {
     }
 
     try {
+      setIsSubmitting(true);
       const response = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,6 +49,8 @@ export default function RegisterPage() {
       console.error('Registration failed:', err);
       setError(true);
       setErrorMessage(t('register.error'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,9 +168,10 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          className="w-full rounded-full px-6 py-3 text-sm font-semibold neon-button mt-6"
+          disabled={isSubmitting}
+          className="w-full rounded-full px-6 py-3 text-sm font-semibold neon-button mt-6 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {t('register.submit')}
+          {isSubmitting ? t('common.loading') : t('register.submit')}
         </button>
       </form>
     </div>

@@ -24,6 +24,14 @@ export interface Registration {
   created_at: string;
 }
 
+function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function normalizePhone(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
 // In-memory fallback for server-side runtime/demo mode
 let serverEvents: Event[] = [
   {
@@ -70,7 +78,24 @@ export function getRegistrations(): Registration[] {
   return saved ? JSON.parse(saved) : [];
 }
 
+export function isDuplicateRegistration(
+  reg: Pick<Registration, 'event_id' | 'email' | 'phone'>,
+  registrations: Registration[] = getRegistrations()
+): boolean {
+  const email = normalizeEmail(reg.email);
+  const phone = normalizePhone(reg.phone);
+
+  return registrations.some((item) => {
+    if (item.event_id !== reg.event_id) return false;
+    return normalizeEmail(item.email) === email || normalizePhone(item.phone) === phone;
+  });
+}
+
 export function saveRegistration(reg: Omit<Registration, 'id' | 'created_at'>): Registration {
+  if (isDuplicateRegistration(reg)) {
+    throw new Error('DUPLICATE_REGISTRATION');
+  }
+
   const newReg: Registration = {
     ...reg,
     id: Date.now(),
