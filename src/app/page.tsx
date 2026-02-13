@@ -10,8 +10,8 @@ export default function HomePage() {
         <div>
           <h1 className="text-4xl font-bold leading-tight md:text-5xl text-pink-300 drop-shadow-[0_0_14px_rgba(255,120,181,0.55)]">
             {t('home.hero_title')}
-          <h1 className="text-4xl font-bold leading-tight md:text-5xl text-pink-300 drop-shadow-[0_0_14px_rgba(255,120,181,0.55)]">
-
+          </h1>
+          <p className="mt-4 text-base text-white/70">
             {t('home.hero_subtitle')}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
