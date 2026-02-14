@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 interface Event {
-  id: number;
+  id: number | string;
   name: string;
   date: string;
   time: string;
   location: string;
   price: string;
-  ageRange: string;
-  maxParticipants: number;
+  age_range: string;
+  max_participants: number;
   status: 'active' | 'closed';
 }
 
@@ -22,9 +22,9 @@ interface Registration {
   phone: string;
   age: number;
   gender: string;
-  lookingFor: string;
-  eventId: number;
-  createdAt: string;
+  looking_for: string;
+  event_id: number;
+  created_at: string;
 }
 
 export default function AdminPage() {
@@ -44,69 +44,38 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    // Load events from localStorage or use defaults
-    const savedEvents = localStorage.getItem('lala_events');
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    } else {
-      const defaultEvents: Event[] = [
-        {
-          id: 1,
-          name: t('event.beach_20_30'),
-          date: '2024-02-15',
-          time: '20:00',
-          location: 'Huntington Beach',
-          price: '$39',
-          ageRange: '20-30',
-          maxParticipants: 20,
-          status: 'active',
-        },
-        {
-          id: 2,
-          name: t('event.weekend_25_35'),
-          date: '2024-02-22',
-          time: '20:00',
-          location: 'Huntington Beach',
-          price: '$39',
-          ageRange: '25-35',
-          maxParticipants: 20,
-          status: 'active',
-        },
-      ];
-      setEvents(defaultEvents);
-      localStorage.setItem('lala_events', JSON.stringify(defaultEvents));
-    }
+    const loadEvents = async () => {
+      const res = await fetch('/api/events', { cache: 'no-store' });
+      const data = await res.json();
+      setEvents(Array.isArray(data) ? data : []);
+    };
 
-    // Load registrations
-    const savedRegs = localStorage.getItem('lala_registrations');
-    if (savedRegs) {
-      setRegistrations(JSON.parse(savedRegs));
-    }
+    const loadRegistrations = async () => {
+      const res = await fetch('/api/registrations', { cache: 'no-store' });
+      const data = await res.json();
+      setRegistrations(Array.isArray(data) ? data : []);
+    };
+
+    loadEvents();
+    loadRegistrations();
   }, [t]);
 
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedName = newEvent.name.trim().toLowerCase();
-    const alreadyExists = events.some(
-      (item) =>
-        item.name.trim().toLowerCase() === normalizedName &&
-        item.date === newEvent.date &&
-        item.time === newEvent.time
-    );
+    const response = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newEvent),
+    });
 
-    if (alreadyExists) {
-      alert(t('admin.duplicate_event'));
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({ error: t('common.error') }));
+      alert(data.error || t('common.error'));
       return;
     }
 
-    const event: Event = {
-      id: Date.now(),
-      ...newEvent,
-      status: 'active',
-    };
-    const updatedEvents = [...events, event];
-    setEvents(updatedEvents);
-    localStorage.setItem('lala_events', JSON.stringify(updatedEvents));
+    const created: Event = await response.json();
+    setEvents((prev) => [...prev, created]);
     setShowCreateForm(false);
     setNewEvent({
       name: '',
@@ -119,16 +88,16 @@ export default function AdminPage() {
     });
   };
 
-  const handleDeleteEvent = (id: number) => {
-    const updatedEvents = events.filter((e) => e.id !== id);
-    setEvents(updatedEvents);
-    localStorage.setItem('lala_events', JSON.stringify(updatedEvents));
+  const handleDeleteEvent = async (id: number | string) => {
+    const response = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+    if (!response.ok) return;
+    setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
   const handleExportCSV = () => {
     const headers = ['Name', 'Email', 'Phone', 'Age', 'Gender', 'Looking For', 'Event ID', 'Created At'];
     const rows = registrations.map((r) =>
-      [r.name, r.email, r.phone, r.age, r.gender, r.lookingFor, r.eventId, r.createdAt].join(',')
+      [r.name, r.email, r.phone, r.age, r.gender, r.looking_for, r.event_id, r.created_at].join(',')
     );
     const csv = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });

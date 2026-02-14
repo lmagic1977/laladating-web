@@ -1,8 +1,48 @@
 'use client';
+import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
+
+interface EventItem {
+  id: number | string;
+  name: string;
+  date: string;
+  time: string;
+  location: string;
+  price: string;
+  age_range: string;
+  status: 'active' | 'closed';
+}
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const [events, setEvents] = useState<EventItem[]>([]);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      const response = await fetch('/api/events', { cache: 'no-store' });
+      const data = await response.json();
+      setEvents(Array.isArray(data) ? data : []);
+    };
+    loadEvents();
+  }, []);
+
+  const now = new Date();
+  const activeEvents = useMemo(
+    () =>
+      events
+        .filter((event) => event.status === 'active')
+        .filter((event) => {
+          const dt = new Date(`${event.date}T${event.time || '00:00'}`);
+          return Number.isNaN(dt.getTime()) || dt >= now;
+        })
+        .sort((a, b) => {
+          const ta = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
+          const tb = new Date(`${b.date}T${b.time || '00:00'}`).getTime();
+          return ta - tb;
+        }),
+    [events]
+  );
+  const nextEvent = activeEvents[0];
   
   return (
     <div className="space-y-12">
@@ -27,11 +67,15 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs uppercase text-white/80">
             {t('home.next_event')}
           </div>
-          <h3 className="mt-4 text-xl font-semibold text-pink-200">Speed Dating · 20-30</h3>
-          <p className="mt-1 text-sm text-white/60">Dance Studio · 20:00</p>
+          <h3 className="mt-4 text-xl font-semibold text-pink-200">
+            {nextEvent ? nextEvent.name : 'LALA Speed Dating'}
+          </h3>
+          <p className="mt-1 text-sm text-white/60">
+            {nextEvent ? `${nextEvent.location} · ${nextEvent.time}` : t('common.loading')}
+          </p>
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
-              { label: t('home.age_range'), value: "20-30" },
+              { label: t('home.age_range'), value: nextEvent?.age_range || '--' },
               { label: t('home.rounds'), value: "8" },
               { label: t('home.duration'), value: "90" },
             ].map((item) => (
@@ -55,21 +99,18 @@ export default function HomePage() {
           </a>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {[
-            { title: t('event.beach_20_30'), time: '20:00', price: '$39' },
-            { title: t('event.weekend_25_35'), time: '20:00', price: '$39' },
-            { title: t('event.spring_24_32'), time: '20:00', price: '$39' },
-          ].map((event) => (
-            <div key={`${event.title}-${event.time}`} className="neon-card p-5">
+          {activeEvents.slice(0, 3).map((event) => (
+            <div key={event.id} className="neon-card p-5">
               <div className="text-xs uppercase text-cyan-300">{t('events.open')}</div>
-              <h3 className="mt-3 text-lg font-semibold text-white">{event.title}</h3>
-              <p className="mt-1 text-sm text-white/60">{t('events.location')}</p>
+              <h3 className="mt-3 text-lg font-semibold text-white">{event.name}</h3>
+              <p className="mt-1 text-sm text-white/60">{event.location}</p>
               <div className="mt-4 flex items-center justify-between text-xs text-white/60">
                 <span>{event.time}</span>
                 <span className="text-pink-300">{event.price}</span>
               </div>
             </div>
           ))}
+          {!activeEvents.length && <div className="text-white/60">{t('common.loading')}</div>}
         </div>
       </section>
 

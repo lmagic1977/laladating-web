@@ -102,6 +102,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Admin Page
     'admin.title': 'Event Management',
     'admin.create_event': 'Create Event',
+    'admin.events': 'Events',
     'admin.event_name': 'Event Name',
     'admin.date': 'Date',
     'admin.time': 'Time',
@@ -236,6 +237,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Admin Page
     'admin.title': '活动管理',
     'admin.create_event': '创建活动',
+    'admin.events': '活动名单',
     'admin.event_name': '活动名称',
     'admin.date': '日期',
     'admin.time': '时间',

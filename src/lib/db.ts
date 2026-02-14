@@ -24,6 +24,27 @@ export interface Registration {
   created_at: string;
 }
 
+export interface Attendee {
+  id: string;
+  name: string;
+  age: number;
+  job: string;
+  contact: string;
+  interests: string;
+  intro?: string;
+  status: string;
+  eventId: string;
+  headshotUrl?: string;
+  fullshotUrl?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -62,6 +83,10 @@ let serverEvents: Event[] = [
 
 let serverRegistrations: Registration[] = [];
 
+function normalizeEventName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 // Local storage helpers for demo mode
 export function getEvents(): Event[] {
   if (typeof window === 'undefined') return serverEvents;
@@ -70,6 +95,53 @@ export function getEvents(): Event[] {
     return JSON.parse(saved);
   }
   return serverEvents;
+}
+
+export function isDuplicateEvent(
+  event: Pick<Event, 'name' | 'date' | 'time'>,
+  events: Event[] = getEvents()
+): boolean {
+  const name = normalizeEventName(event.name);
+  return events.some(
+    (item) =>
+      normalizeEventName(item.name) === name &&
+      item.date === event.date &&
+      item.time === event.time
+  );
+}
+
+export function saveEvent(event: Omit<Event, 'id' | 'created_at'>): Event {
+  if (isDuplicateEvent(event)) {
+    throw new Error('DUPLICATE_EVENT');
+  }
+
+  const newEvent: Event = {
+    ...event,
+    id: Date.now(),
+    created_at: new Date().toISOString(),
+  };
+
+  if (typeof window === 'undefined') {
+    serverEvents.push(newEvent);
+  } else {
+    const events = getEvents();
+    events.push(newEvent);
+    localStorage.setItem('lala_events', JSON.stringify(events));
+  }
+
+  return newEvent;
+}
+
+export function deleteEventById(id: number): boolean {
+  if (typeof window === 'undefined') {
+    const before = serverEvents.length;
+    serverEvents = serverEvents.filter((e) => e.id !== id);
+    return serverEvents.length < before;
+  }
+  const events = getEvents();
+  const next = events.filter((e) => e.id !== id);
+  localStorage.setItem('lala_events', JSON.stringify(next));
+  return next.length < events.length;
 }
 
 export function getRegistrations(): Registration[] {
