@@ -1,7 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getEvents, isDuplicateEvent, saveEvent } from '@/lib/db';
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+function normalizeSupabaseUrl(url?: string) {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  return `https://${trimmed}`;
+}
+
+const supabaseUrl = normalizeSupabaseUrl(
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+);
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_ANON_KEY ||
