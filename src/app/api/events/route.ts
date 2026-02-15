@@ -26,99 +26,95 @@ function mapRowToEvent(row: Record<string, unknown>) {
 }
 
 export async function GET() {
-  if (hasSupabaseConfig()) {
-    const response = await fetch(`${supabaseUrl}/rest/v1/events?select=*`, {
-      headers: {
-        apikey: String(supabaseKey),
-        Authorization: `Bearer ${String(supabaseKey)}`,
-      },
-      cache: 'no-store',
-    });
+  try {
+    if (hasSupabaseConfig()) {
+      const response = await fetch(`${supabaseUrl}/rest/v1/events?select=*`, {
+        headers: {
+          apikey: String(supabaseKey),
+          Authorization: `Bearer ${String(supabaseKey)}`,
+        },
+        cache: 'no-store',
+      });
 
-    if (response.ok) {
-      const rows = (await response.json()) as Record<string, unknown>[];
-      return NextResponse.json(rows.map(mapRowToEvent));
-    }
-  }
-
-  const events = getEvents();
-  return NextResponse.json(events);
-}
-
-export async function POST(request: Request) {
-  const data = await request.json();
-  const payload = {
-    name: String(data.name || ''),
-    date: String(data.date || ''),
-    time: String(data.time || ''),
-    location: String(data.location || ''),
-    price: String(data.price || ''),
-    age_range: String(data.age_range || data.ageRange || ''),
-    max_participants: Number(data.max_participants || data.maxParticipants || 20),
-    status: data.status === 'closed' ? 'closed' : 'active',
-  } as const;
-
-  if (!payload.name || !payload.date || !payload.time || !payload.location || !payload.price || !payload.age_range) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-  }
-
-  if (hasSupabaseConfig()) {
-    const listResponse = await fetch(`${supabaseUrl}/rest/v1/events?select=*`, {
-      headers: {
-        apikey: String(supabaseKey),
-        Authorization: `Bearer ${String(supabaseKey)}`,
-      },
-      cache: 'no-store',
-    });
-
-    if (listResponse.ok) {
-      const rows = (await listResponse.json()) as Record<string, unknown>[];
-      const events = rows.map(mapRowToEvent);
-      if (isDuplicateEvent(payload, events as any)) {
-        return NextResponse.json(
-          { error: 'Event already exists / 活动已存在' },
-          { status: 409 }
-        );
+      if (response.ok) {
+        const rows = (await response.json()) as Record<string, unknown>[];
+        return NextResponse.json(rows.map(mapRowToEvent));
       }
     }
 
-    const id = String(Date.now());
-    const withNewColumns = {
-      id,
-      name: payload.name,
-      date: payload.date,
-      time: payload.time,
-      location: payload.location,
-      price: payload.price,
-      age_range: payload.age_range,
-      max_participants: payload.max_participants,
-      status: payload.status,
-      created_at: new Date().toISOString(),
-    };
-    const withLegacyColumns = {
-      id,
-      title: payload.name,
-      date: payload.date,
-      time: payload.time,
-      location: payload.location,
-      price: payload.price,
-      seats: payload.max_participants,
-      status: payload.status,
-    };
+    const events = getEvents();
+    return NextResponse.json(events);
+  } catch (error) {
+    return NextResponse.json(
+      { error: `GET /api/events failed: ${String(error)}` },
+      { status: 500 }
+    );
+  }
+}
 
-    let insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
-      method: 'POST',
-      headers: {
-        apikey: String(supabaseKey),
-        Authorization: `Bearer ${String(supabaseKey)}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(withNewColumns),
-    });
+export async function POST(request: Request) {
+  try {
+    const data = await request.json();
+    const payload = {
+      name: String(data.name || ''),
+      date: String(data.date || ''),
+      time: String(data.time || ''),
+      location: String(data.location || ''),
+      price: String(data.price || ''),
+      age_range: String(data.age_range || data.ageRange || ''),
+      max_participants: Number(data.max_participants || data.maxParticipants || 20),
+      status: data.status === 'closed' ? 'closed' : 'active',
+    } as const;
 
-    if (!insertResponse.ok) {
-      insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
+    if (!payload.name || !payload.date || !payload.time || !payload.location || !payload.price || !payload.age_range) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (hasSupabaseConfig()) {
+      const listResponse = await fetch(`${supabaseUrl}/rest/v1/events?select=*`, {
+        headers: {
+          apikey: String(supabaseKey),
+          Authorization: `Bearer ${String(supabaseKey)}`,
+        },
+        cache: 'no-store',
+      });
+
+      if (listResponse.ok) {
+        const rows = (await listResponse.json()) as Record<string, unknown>[];
+        const events = rows.map(mapRowToEvent);
+        if (isDuplicateEvent(payload, events as any)) {
+          return NextResponse.json(
+            { error: 'Event already exists / 活动已存在' },
+            { status: 409 }
+          );
+        }
+      }
+
+      const id = String(Date.now());
+      const withNewColumns = {
+        id,
+        name: payload.name,
+        date: payload.date,
+        time: payload.time,
+        location: payload.location,
+        price: payload.price,
+        age_range: payload.age_range,
+        max_participants: payload.max_participants,
+        status: payload.status,
+        created_at: new Date().toISOString(),
+      };
+      const withLegacyColumns = {
+        id,
+        title: payload.name,
+        date: payload.date,
+        time: payload.time,
+        location: payload.location,
+        price: payload.price,
+        seats: payload.max_participants,
+        status: payload.status,
+      };
+
+      let insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
         method: 'POST',
         headers: {
           apikey: String(supabaseKey),
@@ -126,26 +122,47 @@ export async function POST(request: Request) {
           'Content-Type': 'application/json',
           Prefer: 'return=representation',
         },
-        body: JSON.stringify(withLegacyColumns),
+        body: JSON.stringify(withNewColumns),
       });
+
+      if (!insertResponse.ok) {
+        insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
+          method: 'POST',
+          headers: {
+            apikey: String(supabaseKey),
+            Authorization: `Bearer ${String(supabaseKey)}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify(withLegacyColumns),
+        });
+      }
+
+      if (!insertResponse.ok) {
+        const err = await insertResponse.text();
+        return NextResponse.json(
+          { error: err || 'Failed to create event' },
+          { status: 500 }
+        );
+      }
+
+      const createdRows = (await insertResponse.json()) as Record<string, unknown>[];
+      return NextResponse.json(mapRowToEvent(createdRows[0] || withNewColumns));
     }
 
-    if (!insertResponse.ok) {
-      const err = await insertResponse.text();
-      return NextResponse.json({ error: err || 'Failed to create event' }, { status: 500 });
+    if (isDuplicateEvent(payload, getEvents())) {
+      return NextResponse.json(
+        { error: 'Event already exists / 活动已存在' },
+        { status: 409 }
+      );
     }
 
-    const createdRows = (await insertResponse.json()) as Record<string, unknown>[];
-    return NextResponse.json(mapRowToEvent(createdRows[0] || withNewColumns));
-  }
-
-  if (isDuplicateEvent(payload, getEvents())) {
+    const event = saveEvent(payload);
+    return NextResponse.json(event);
+  } catch (error) {
     return NextResponse.json(
-      { error: 'Event already exists / 活动已存在' },
-      { status: 409 }
+      { error: `POST /api/events failed: ${String(error)}` },
+      { status: 500 }
     );
   }
-
-  const event = saveEvent(payload);
-  return NextResponse.json(event);
 }

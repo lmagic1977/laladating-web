@@ -73,8 +73,8 @@ export default function AdminPage() {
         const text = await response.text();
         let message = '';
         try {
-          const parsed = JSON.parse(text) as { error?: string };
-          message = parsed.error || '';
+          const parsed = JSON.parse(text) as { error?: string; message?: string; details?: string };
+          message = parsed.error || parsed.message || parsed.details || '';
         } catch {
           message = text;
         }
