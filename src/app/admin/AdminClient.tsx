@@ -62,30 +62,41 @@ export default function AdminPage() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    const response = await fetch('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newEvent),
-    });
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEvent),
+      });
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({ error: t('common.error') }));
-      alert(data.error || t('common.error'));
-      return;
+      if (!response.ok) {
+        const text = await response.text();
+        let message = '';
+        try {
+          const parsed = JSON.parse(text) as { error?: string };
+          message = parsed.error || '';
+        } catch {
+          message = text;
+        }
+        alert(message || `Save failed (${response.status})`);
+        return;
+      }
+
+      const created: Event = await response.json();
+      setEvents((prev) => [...prev, created]);
+      setShowCreateForm(false);
+      setNewEvent({
+        name: '',
+        date: '',
+        time: '',
+        location: '',
+        price: '',
+        ageRange: '',
+        maxParticipants: 20,
+      });
+    } catch (error) {
+      alert(`Network error: ${String(error)}`);
     }
-
-    const created: Event = await response.json();
-    setEvents((prev) => [...prev, created]);
-    setShowCreateForm(false);
-    setNewEvent({
-      name: '',
-      date: '',
-      time: '',
-      location: '',
-      price: '',
-      ageRange: '',
-      maxParticipants: 20,
-    });
   };
 
   const handleDeleteEvent = async (id: number | string) => {
