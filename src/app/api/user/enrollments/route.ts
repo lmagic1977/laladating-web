@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { USER_AUTH_COOKIE, verifyUserSessionToken } from "@/lib/user-auth";
 import { getEvents } from "@/lib/db";
+import { chargeForEvent } from "@/lib/user-finance";
 
 type Enrollment = {
   id: string;
@@ -13,6 +14,12 @@ type Enrollment = {
 };
 
 const localEnrollments: Enrollment[] = [];
+
+function parsePriceToNumber(price: string) {
+  const cleaned = String(price || "").replace(/[^0-9.]/g, "");
+  const amount = Number(cleaned || 0);
+  return Number.isFinite(amount) ? amount : 0;
+}
 
 function normalizeSupabaseUrl(url?: string) {
   if (!url) return "";
@@ -85,15 +92,29 @@ export async function POST(request: Request) {
     });
     const eventRows = eventRes.ok ? ((await eventRes.json()) as Record<string, unknown>[]) : [];
     const event = eventRows[0] || getEvents().find((e) => String(e.id) === eventId);
-    const amount = String((event as any)?.price || "$39");
-    const normalizedAmount = amount.trim();
-    const isFree = normalizedAmount === "0" || normalizedAmount === "$0" || /^free$/i.test(normalizedAmount);
+    const amountText = String((event as any)?.price || "$39");
+    const amountNumber = parsePriceToNumber(amountText);
+    let charge: ReturnType<typeof chargeForEvent>;
+    try {
+      charge = chargeForEvent(user.userId, amountNumber);
+    } catch (error) {
+      if (error instanceof Error && error.message === "INSUFFICIENT_BALANCE") {
+        return NextResponse.json({ error: "Insufficient wallet balance / 余额不足" }, { status: 400 });
+      }
+      throw error;
+    }
+    const payment =
+      charge.method === "free"
+        ? "free:0"
+        : charge.method === "pass"
+        ? `pass:${charge.packageId}`
+        : `wallet:$${amountNumber}`;
 
     const payload: Enrollment = {
       id: String(Date.now()),
       attendeeid: user.userId,
       eventid: eventId,
-      payment: isFree ? "free:0" : `paid:${amount}`,
+      payment,
       status: "paid",
       createdat: new Date().toISOString(),
     };
@@ -112,7 +133,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: await insertRes.text() }, { status: 500 });
     }
     const created = (await insertRes.json()) as Enrollment[];
-    return NextResponse.json({ ok: true, enrollment: created[0], paymentMode: "test_paid" });
+    return NextResponse.json({ ok: true, enrollment: created[0], paymentMode: payment });
   }
 
   const duplicate = localEnrollments.some(
@@ -121,17 +142,31 @@ export async function POST(request: Request) {
   if (duplicate) return NextResponse.json({ error: "Already enrolled in this event" }, { status: 409 });
 
   const localEvent = getEvents().find((e) => String(e.id) === eventId);
-  const amount = localEvent?.price || "$39";
-  const normalizedAmount = String(amount).trim();
-  const isFree = normalizedAmount === "0" || normalizedAmount === "$0" || /^free$/i.test(normalizedAmount);
+  const amountText = localEvent?.price || "$39";
+  const amountNumber = parsePriceToNumber(amountText);
+  let charge: ReturnType<typeof chargeForEvent>;
+  try {
+    charge = chargeForEvent(user.userId, amountNumber);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_BALANCE") {
+      return NextResponse.json({ error: "Insufficient wallet balance / 余额不足" }, { status: 400 });
+    }
+    throw error;
+  }
+  const payment =
+    charge.method === "free"
+      ? "free:0"
+      : charge.method === "pass"
+      ? `pass:${charge.packageId}`
+      : `wallet:$${amountNumber}`;
   const enrollment: Enrollment = {
     id: String(Date.now()),
     attendeeid: user.userId,
     eventid: eventId,
-    payment: isFree ? "free:0" : `paid:${amount}`,
+    payment,
     status: "paid",
     createdat: new Date().toISOString(),
   };
   localEnrollments.push(enrollment);
-  return NextResponse.json({ ok: true, enrollment, paymentMode: "test_paid" });
+  return NextResponse.json({ ok: true, enrollment, paymentMode: payment });
 }

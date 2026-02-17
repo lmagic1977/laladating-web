@@ -20,6 +20,33 @@ type Enrollment = {
   createdat: string;
 };
 
+type WalletState = {
+  balance: number;
+  passes: Array<{
+    packageId: string;
+    title: string;
+    total: number;
+    remaining: number;
+    purchasedAt: string;
+  }>;
+  ledger: Array<{
+    id: string;
+    type: string;
+    amount: number;
+    note: string;
+    createdAt: string;
+  }>;
+};
+
+type PassPackage = {
+  id: string;
+  title: string;
+  titleZh: string;
+  credits: number;
+  price: number;
+  originalPrice: number;
+};
+
 export default function AccountPage() {
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("");
@@ -27,6 +54,9 @@ export default function AccountPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [error, setError] = useState("");
   const [payingId, setPayingId] = useState<string>("");
+  const [wallet, setWallet] = useState<WalletState>({ balance: 0, passes: [], ledger: [] });
+  const [packages, setPackages] = useState<PassPackage[]>([]);
+  const [topupAmount, setTopupAmount] = useState("100");
 
   const enrollmentMap = useMemo(() => {
     const m = new Set<string>();
@@ -45,12 +75,16 @@ export default function AccountPage() {
     }
     setEmail(session.user.email);
 
-    const [eventsRes, enrollmentsRes] = await Promise.all([
+    const [eventsRes, enrollmentsRes, walletRes, packageRes] = await Promise.all([
       fetch("/api/events", { cache: "no-store" }),
       fetch("/api/user/enrollments", { cache: "no-store" }),
+      fetch("/api/user/wallet", { cache: "no-store" }),
+      fetch("/api/user/packages", { cache: "no-store" }),
     ]);
     setEvents(await eventsRes.json());
     setEnrollments(await enrollmentsRes.json());
+    setWallet(await walletRes.json());
+    setPackages(await packageRes.json());
     setReady(true);
   };
 
@@ -87,6 +121,41 @@ export default function AccountPage() {
     }
   };
 
+  const onTopup = async () => {
+    setError("");
+    const amount = Number(topupAmount);
+    if (!amount || amount <= 0) {
+      setError("Invalid top-up amount / 充值金额无效");
+      return;
+    }
+    const res = await fetch("/api/user/wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(data?.error || "Top-up failed");
+      return;
+    }
+    await load();
+  };
+
+  const onBuyPackage = async (packageId: string) => {
+    setError("");
+    const res = await fetch("/api/user/packages/purchase", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(data?.error || "Purchase failed");
+      return;
+    }
+    await load();
+  };
+
   if (!ready) {
     return <div className="text-white/70">Loading...</div>;
   }
@@ -109,6 +178,55 @@ export default function AccountPage() {
       {error ? (
         <div className="rounded-lg border border-red-500/40 bg-red-500/20 p-3 text-sm text-red-200">{error}</div>
       ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="neon-card p-5">
+          <h2 className="text-lg font-semibold">Wallet / 钱包</h2>
+          <p className="mt-2 text-3xl font-bold text-cyan-300">${wallet.balance.toFixed(2)}</p>
+          <div className="mt-4 flex items-center gap-2">
+            <input
+              value={topupAmount}
+              onChange={(e) => setTopupAmount(e.target.value)}
+              className="w-32 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm outline-none focus:border-pink-500"
+            />
+            <button onClick={onTopup} className="rounded-full px-4 py-2 text-xs font-semibold neon-button">
+              Top Up / 充值
+            </button>
+          </div>
+        </div>
+        <div className="neon-card p-5">
+          <h2 className="text-lg font-semibold">My Passes / 我的套餐</h2>
+          <div className="mt-2 space-y-2 text-sm text-white/80">
+            {wallet.passes.length ? wallet.passes.map((p, idx) => (
+              <div key={`${p.packageId}-${idx}`} className="flex items-center justify-between">
+                <span>{p.title}</span>
+                <span className="text-pink-300">{p.remaining}/{p.total}</span>
+              </div>
+            )) : <p className="text-white/50">No passes yet / 暂无套餐</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="neon-card p-5">
+        <h2 className="text-lg font-semibold">Pass Packages / 套餐购买</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {packages.map((pkg) => (
+            <div key={pkg.id} className="rounded-xl border border-white/15 p-4">
+              <p className="font-semibold">{pkg.titleZh}</p>
+              <p className="text-sm text-white/60">{pkg.title}</p>
+              <p className="mt-2 text-sm">Credits: {pkg.credits}</p>
+              <p className="text-sm text-white/50 line-through">${pkg.originalPrice}</p>
+              <p className="text-xl font-bold text-cyan-300">${pkg.price}</p>
+              <button
+                onClick={() => onBuyPackage(pkg.id)}
+                className="mt-3 rounded-full px-4 py-2 text-xs font-semibold neon-button"
+              >
+                Buy / 购买
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {events
