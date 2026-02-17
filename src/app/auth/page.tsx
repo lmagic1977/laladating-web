@@ -26,7 +26,12 @@ export default function AuthPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setError(data?.error || "Auth failed");
+        const message = String(data?.error || "Auth failed");
+        if (message.toLowerCase().includes("rate limit")) {
+          setError("注册请求太频繁，请先登录或稍后重试 / Too many signup attempts, try login first.");
+        } else {
+          setError(message);
+        }
         return;
       }
       window.location.href = "/account";

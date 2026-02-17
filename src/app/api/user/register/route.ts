@@ -12,9 +12,14 @@ function normalizeSupabaseUrl(url?: string) {
 
 const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "");
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 function canUseSupabaseAuth() {
   return Boolean(supabaseUrl && supabaseAnonKey);
+}
+
+function canUseSupabaseAdmin() {
+  return Boolean(supabaseUrl && supabaseServiceRoleKey);
 }
 
 export async function POST(request: Request) {
@@ -30,7 +35,31 @@ export async function POST(request: Request) {
   try {
     let userId = "";
 
-    if (canUseSupabaseAuth()) {
+    if (canUseSupabaseAdmin()) {
+      const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+        method: "POST",
+        headers: {
+          apikey: supabaseServiceRoleKey,
+          Authorization: `Bearer ${supabaseServiceRoleKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { name },
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: data?.msg || data?.error_description || data?.message || "Sign up failed" },
+          { status: 400 }
+        );
+      }
+      userId = data?.id || "";
+      if (!userId) return NextResponse.json({ error: "User created but no user id returned" }, { status: 500 });
+    } else if (canUseSupabaseAuth()) {
       const response = await fetch(`${supabaseUrl}/auth/v1/signup`, {
         method: "POST",
         headers: {
@@ -42,12 +71,13 @@ export async function POST(request: Request) {
       });
       const data = await response.json();
       if (!response.ok) {
-        return NextResponse.json({ error: data?.msg || data?.error_description || "Sign up failed" }, { status: 400 });
+        return NextResponse.json(
+          { error: data?.msg || data?.error_description || data?.message || "Sign up failed" },
+          { status: 400 }
+        );
       }
       userId = data?.user?.id || "";
-      if (!userId) {
-        return NextResponse.json({ error: "User created but no user id returned" }, { status: 500 });
-      }
+      if (!userId) return NextResponse.json({ error: "User created but no user id returned" }, { status: 500 });
     } else {
       const localUser = createLocalUser(email, password, name);
       userId = localUser.id;
