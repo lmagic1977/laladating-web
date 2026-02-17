@@ -69,7 +69,6 @@ export default function AccountPage() {
   const [cancelingId, setCancelingId] = useState<string>("");
   const [wallet, setWallet] = useState<WalletState>({ balance: 0, passes: [], ledger: [] });
   const [packages, setPackages] = useState<PassPackage[]>([]);
-  const [topupAmount, setTopupAmount] = useState("100");
   const [profile, setProfile] = useState<ProfileForm>({
     age: "",
     job: "",
@@ -183,26 +182,6 @@ export default function AccountPage() {
     } finally {
       setCancelingId("");
     }
-  };
-
-  const onTopup = async () => {
-    setError("");
-    const amount = Number(topupAmount);
-    if (!amount || amount <= 0) {
-      setError("Invalid top-up amount / 充值金额无效");
-      return;
-    }
-    const res = await fetch("/api/user/wallet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(data?.error || "Top-up failed");
-      return;
-    }
-    await load();
   };
 
   const onBuyPackage = async (packageId: string) => {
@@ -330,16 +309,7 @@ export default function AccountPage() {
         <div className="neon-card p-5">
           <h2 className="text-lg font-semibold">Wallet / 钱包</h2>
           <p className="mt-2 text-3xl font-bold text-cyan-300">${wallet.balance.toFixed(2)}</p>
-          <div className="mt-4 flex items-center gap-2">
-            <input
-              value={topupAmount}
-              onChange={(e) => setTopupAmount(e.target.value)}
-              className="w-32 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm outline-none focus:border-pink-500"
-            />
-            <button onClick={onTopup} className="rounded-full px-4 py-2 text-xs font-semibold neon-button">
-              Top Up / 充值
-            </button>
-          </div>
+          <p className="mt-4 text-sm text-white/70">充值由管理员操作 / Top-up is managed by admin only</p>
         </div>
         <div className="neon-card p-5">
           <h2 className="text-lg font-semibold">My Passes / 我的套餐</h2>

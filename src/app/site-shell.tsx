@@ -28,7 +28,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           <nav className="hidden md:flex flex-1 max-w-2xl mx-8 items-center justify-between text-base font-semibold text-white/80">
             <a href="/" className="flex-1 text-center hover:text-white">{t('nav.home')}</a>
             <a href="/events" className="flex-1 text-center hover:text-white">{t('nav.events')}</a>
-            <a href="/register" className="flex-1 text-center hover:text-white">{t('nav.register')}</a>
+            <a href={loggedIn ? "/register" : "/auth"} className="flex-1 text-center hover:text-white">{t('nav.register')}</a>
             <a href="/onsite" className="flex-1 text-center hover:text-white">{t('nav.onsite')}</a>
             <a href={loggedIn ? "/account" : "/auth"} className="flex-1 text-center hover:text-white">
               {loggedIn ? t('nav.account') : t('nav.auth')}
@@ -45,7 +45,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-5 text-center text-sm font-semibold text-white/80">
             <a href="/" className="hover:text-white">{t('nav.home')}</a>
             <a href="/events" className="hover:text-white">{t('nav.events')}</a>
-            <a href="/register" className="hover:text-white">{t('nav.register')}</a>
+            <a href={loggedIn ? "/register" : "/auth"} className="hover:text-white">{t('nav.register')}</a>
             <a href="/onsite" className="hover:text-white">{t('nav.onsite')}</a>
             <a href={loggedIn ? "/account" : "/auth"} className="hover:text-white">
               {loggedIn ? t('nav.account') : t('nav.auth')}

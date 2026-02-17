@@ -58,9 +58,6 @@ export default function HomePage() {
             <a href="/events" className="rounded-full px-4 py-2 text-sm font-semibold neon-button">
               {t('home.view_events')}
             </a>
-            <a href="/register" className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white">
-              {t('home.register_now')}
-            </a>
           </div>
         </div>
         <div className="glass rounded-2xl p-6">

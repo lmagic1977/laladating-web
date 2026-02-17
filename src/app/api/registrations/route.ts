@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getRegistrations, isDuplicateRegistration, saveRegistration } from '@/lib/db';
+import { USER_AUTH_COOKIE, verifyUserSessionToken } from '@/lib/user-auth';
 
 function normalizeSupabaseUrl(url?: string) {
   if (!url) return '';
@@ -89,6 +91,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const token = cookies().get(USER_AUTH_COOKIE)?.value;
+  const session = verifyUserSessionToken(token);
+  if (!session) {
+    return NextResponse.json({ error: 'Please login first / 请先登录' }, { status: 401 });
+  }
+
   const data = await request.json();
   const lookingFor = data.looking_for || data.lookingFor;
   const eventId = String(data.event_id || data.eventId || '').trim();
