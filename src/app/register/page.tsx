@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useEffect } from 'react';
 
 export default function RegisterPage() {
   const { t } = useLanguage();
@@ -17,12 +18,27 @@ export default function RegisterPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const check = async () => {
+      const res = await fetch('/api/user/session', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      setIsAuthed(Boolean(data?.authenticated));
+    };
+    check();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+    if (!isAuthed) {
+      setError(true);
+      setErrorMessage('请先注册/登录后再报名');
+      return;
+    }
     
     if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.gender || !formData.lookingFor || !formData.headshotUrl || !formData.fullshotUrl) {
       setError(true);
@@ -82,6 +98,20 @@ export default function RegisterPage() {
       <div className="neon-card max-w-md mx-auto p-8 text-center">
         <div className="text-4xl mb-4">💕</div>
         <h2 className="text-2xl font-semibold mb-4">{t('register.success')}</h2>
+      </div>
+    );
+  }
+
+  if (isAuthed === false) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="neon-card p-8 text-center">
+          <h1 className="text-3xl font-semibold mb-4">{t('register.title')}</h1>
+          <p className="text-white/70 mb-6">请先注册/登录，再进行活动报名。</p>
+          <a href="/auth" className="rounded-full px-6 py-3 text-sm font-semibold neon-button">
+            注册/登录
+          </a>
+        </div>
       </div>
     );
   }

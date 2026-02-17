@@ -31,13 +31,13 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <a href="/register" className="flex-1 text-center hover:text-white">{t('nav.register')}</a>
             <a href="/onsite" className="flex-1 text-center hover:text-white">{t('nav.onsite')}</a>
             <a href={loggedIn ? "/account" : "/auth"} className="flex-1 text-center hover:text-white">
-              {loggedIn ? "Account" : "Login"}
+              {loggedIn ? t('nav.account') : t('nav.auth')}
             </a>
           </nav>
           <div className="flex items-center gap-2">
             <LangToggle />
             <a href={loggedIn ? "/account" : "/auth"} className="rounded-full px-4 py-2 text-sm font-semibold neon-button">
-              {loggedIn ? "My Account" : t('nav.cta')}
+              {loggedIn ? t('nav.account') : t('nav.auth')}
             </a>
           </div>
         </div>
@@ -48,7 +48,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <a href="/register" className="hover:text-white">{t('nav.register')}</a>
             <a href="/onsite" className="hover:text-white">{t('nav.onsite')}</a>
             <a href={loggedIn ? "/account" : "/auth"} className="hover:text-white">
-              {loggedIn ? "Account" : "Login"}
+              {loggedIn ? t('nav.account') : t('nav.auth')}
             </a>
           </div>
         </nav>

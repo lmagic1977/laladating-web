@@ -11,6 +11,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'nav.onsite': 'Onsite',
     'nav.admin': 'Admin',
     'nav.cta': 'Join Now',
+    'nav.auth': 'Register/Login',
+    'nav.account': 'My Account',
 
     // Home Page
     'home.hero_title': 'Find Your Perfect Match at LALA Speed Dating',
@@ -147,6 +149,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'nav.onsite': '现场',
     'nav.admin': '管理',
     'nav.cta': '立即报名',
+    'nav.auth': '注册/登录',
+    'nav.account': '我的账户',
 
     // Home Page
     'home.hero_title': '在 LALA 极速相亲找到你的完美伴侣',
