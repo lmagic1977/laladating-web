@@ -22,7 +22,7 @@ export interface Registration {
   age: number;
   gender: string;
   looking_for: string;
-  event_id: number;
+  event_id: string | number;
   headshot_url: string;
   fullshot_url: string;
   created_at: string;
@@ -162,7 +162,7 @@ export function isDuplicateRegistration(
   const phone = normalizePhone(reg.phone);
 
   return registrations.some((item) => {
-    if (item.event_id !== reg.event_id) return false;
+    if (String(item.event_id) !== String(reg.event_id)) return false;
     return normalizeEmail(item.email) === email || normalizePhone(item.phone) === phone;
   });
 }

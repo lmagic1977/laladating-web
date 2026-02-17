@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { useEffect } from 'react';
+
+type EventOption = {
+  id: string | number;
+  name: string;
+  date: string;
+  time: string;
+  location: string;
+  price: string;
+  status?: string;
+};
 
 export default function RegisterPage() {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
+    eventId: '',
     name: '',
     email: '',
     phone: '',
@@ -21,14 +31,36 @@ export default function RegisterPage() {
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [topupAmount, setTopupAmount] = useState('100');
+  const [isTopupLoading, setIsTopupLoading] = useState(false);
 
   useEffect(() => {
-    const check = async () => {
-      const res = await fetch('/api/user/session', { cache: 'no-store' });
-      const data = await res.json().catch(() => ({}));
-      setIsAuthed(Boolean(data?.authenticated));
+    const load = async () => {
+      const sessionRes = await fetch('/api/user/session', { cache: 'no-store' });
+      const sessionData = await sessionRes.json().catch(() => ({}));
+      const authenticated = Boolean(sessionData?.authenticated);
+      setIsAuthed(authenticated);
+
+      const eventsRes = await fetch('/api/events', { cache: 'no-store' });
+      const eventsJson = await eventsRes.json().catch(() => []);
+      const activeEvents = Array.isArray(eventsJson)
+        ? eventsJson.filter((item) => (item?.status || 'active') !== 'closed')
+        : [];
+      setEvents(activeEvents);
+
+      if (authenticated) {
+        const walletRes = await fetch('/api/user/wallet', { cache: 'no-store' });
+        const walletData = await walletRes.json().catch(() => ({}));
+        setWalletBalance(Number(walletData?.balance || 0));
+      }
     };
-    check();
+
+    load().catch(() => {
+      setIsAuthed(false);
+      setEvents([]);
+    });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,8 +71,18 @@ export default function RegisterPage() {
       setErrorMessage('请先注册/登录后再报名');
       return;
     }
-    
-    if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.gender || !formData.lookingFor || !formData.headshotUrl || !formData.fullshotUrl) {
+
+    if (
+      !formData.eventId ||
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.age ||
+      !formData.gender ||
+      !formData.lookingFor ||
+      !formData.headshotUrl ||
+      !formData.fullshotUrl
+    ) {
       setError(true);
       setErrorMessage(t('register.error'));
       return;
@@ -53,6 +95,7 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          event_id: formData.eventId,
           headshot_url: formData.headshotUrl,
           fullshot_url: formData.fullshotUrl,
         }),
@@ -76,12 +119,41 @@ export default function RegisterPage() {
     }
   };
 
+  const handleTopup = async () => {
+    const amount = Number(topupAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError(true);
+      setErrorMessage('充值金额无效 / Invalid top-up amount');
+      return;
+    }
+
+    try {
+      setIsTopupLoading(true);
+      const res = await fetch('/api/user/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(true);
+        setErrorMessage(data?.error || '充值失败 / Top-up failed');
+        return;
+      }
+      setWalletBalance(Number(data?.balance || 0));
+      setError(false);
+      setErrorMessage('');
+    } finally {
+      setIsTopupLoading(false);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (field: 'headshotUrl' | 'fullshotUrl') =>
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange =
+    (field: 'headshotUrl' | 'fullshotUrl') => async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -129,8 +201,59 @@ export default function RegisterPage() {
         </div>
       )}
 
+      {isAuthed && (
+        <div className="neon-card p-6 mb-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-lg font-semibold">虚拟充值 / Virtual Top-Up</p>
+              <p className="text-white/70 mt-1">
+                当前余额 / Balance:{' '}
+                <span className="text-cyan-300 font-semibold">${walletBalance.toFixed(2)}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(e.target.value)}
+                className="w-28 rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white placeholder-white/40 focus:border-pink-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleTopup}
+                disabled={isTopupLoading}
+                className="rounded-full px-5 py-2 text-sm font-semibold neon-button disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isTopupLoading ? t('common.loading') : '充值 / Top Up'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="neon-card p-6 space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-2">选择场次 / Select Event *</label>
+            <select
+              name="eventId"
+              value={formData.eventId}
+              onChange={handleChange}
+              className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+              required
+            >
+              <option value="" className="bg-gray-900">
+                {t('common.select')}
+              </option>
+              {events.map((event) => (
+                <option key={String(event.id)} value={String(event.id)} className="bg-gray-900">
+                  {event.name} | {event.date} {event.time} | {event.location} | {event.price}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-2">{t('register.name')} *</label>
             <input
@@ -190,11 +313,21 @@ export default function RegisterPage() {
               className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
               required
             >
-              <option value="" className="bg-gray-900">{t('common.select')}</option>
-              <option value="male" className="bg-gray-900">{t('register.male')}</option>
-              <option value="female" className="bg-gray-900">{t('register.female')}</option>
-              <option value="other" className="bg-gray-900">{t('register.other')}</option>
-              <option value="prefer_not" className="bg-gray-900">{t('register.prefer_not')}</option>
+              <option value="" className="bg-gray-900">
+                {t('common.select')}
+              </option>
+              <option value="male" className="bg-gray-900">
+                {t('register.male')}
+              </option>
+              <option value="female" className="bg-gray-900">
+                {t('register.female')}
+              </option>
+              <option value="other" className="bg-gray-900">
+                {t('register.other')}
+              </option>
+              <option value="prefer_not" className="bg-gray-900">
+                {t('register.prefer_not')}
+              </option>
             </select>
           </div>
 
@@ -207,10 +340,18 @@ export default function RegisterPage() {
               className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
               required
             >
-              <option value="" className="bg-gray-900">{t('common.select')}</option>
-              <option value="men" className="bg-gray-900">{t('register.men')}</option>
-              <option value="women" className="bg-gray-900">{t('register.women')}</option>
-              <option value="everyone" className="bg-gray-900">{t('register.everyone')}</option>
+              <option value="" className="bg-gray-900">
+                {t('common.select')}
+              </option>
+              <option value="men" className="bg-gray-900">
+                {t('register.men')}
+              </option>
+              <option value="women" className="bg-gray-900">
+                {t('register.women')}
+              </option>
+              <option value="everyone" className="bg-gray-900">
+                {t('register.everyone')}
+              </option>
             </select>
           </div>
 

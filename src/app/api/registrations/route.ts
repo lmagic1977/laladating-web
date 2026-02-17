@@ -91,10 +91,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const data = await request.json();
   const lookingFor = data.looking_for || data.lookingFor;
-  const eventId = Number(data.event_id || data.eventId || 1);
+  const eventId = String(data.event_id || data.eventId || '').trim();
   const registrations = getRegistrations();
   
-  if (!data.name || !data.email || !data.phone || !data.age || !data.gender || !lookingFor || !data.headshot_url || !data.fullshot_url) {
+  if (!data.name || !data.email || !data.phone || !data.age || !data.gender || !lookingFor || !data.headshot_url || !data.fullshot_url || !eventId) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     name: data.name,
     email: data.email,
     phone: data.phone,
-    age: parseInt(data.age),
+    age: Number.parseInt(String(data.age), 10),
     gender: data.gender,
     looking_for: lookingFor,
     event_id: eventId,
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       const supaPayload = {
         id: String(Date.now()),
         attendeeid: String(data.email).toLowerCase(),
-        eventid: String(eventId),
+        eventid: eventId,
         payment: 'manual:pending',
         status: 'registered',
         createdat: new Date().toISOString(),
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       const minimalPayload = {
         id: String(Date.now()),
         attendeeid: String(data.email).toLowerCase(),
-        eventid: String(eventId),
+        eventid: eventId,
         payment: 'manual:pending',
         status: 'registered',
         createdat: new Date().toISOString(),
