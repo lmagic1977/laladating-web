@@ -26,6 +26,7 @@ interface Registration {
   gender: string;
   looking_for: string;
   event_id: number | string;
+  headshot_url?: string;
   created_at: string;
   status?: string;
   payment?: string;
@@ -37,6 +38,7 @@ export default function AdminPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [cancelingRegistrationId, setCancelingRegistrationId] = useState<string>('');
+  const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newEvent, setNewEvent] = useState({
     name: '',
@@ -109,6 +111,8 @@ export default function AdminPage() {
   };
 
   const handleDeleteEvent = async (id: number | string) => {
+    const ok = window.confirm('确认删除该活动？此操作不可恢复。');
+    if (!ok) return;
     const response = await fetch(`/api/events/${id}`, { method: 'DELETE' });
     if (!response.ok) return;
     setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -129,6 +133,8 @@ export default function AdminPage() {
   };
 
   const handleForceCancel = async (registrationId: number) => {
+    const ok = window.confirm('确认取消该用户资格并退回额度？');
+    if (!ok) return;
     setCancelingRegistrationId(String(registrationId));
     try {
       const response = await fetch('/api/admin/enrollments/cancel', {
@@ -308,12 +314,58 @@ export default function AdminPage() {
               </div>
               <div className="mt-4 flex gap-2">
                 <button
+                  onClick={() =>
+                    setActiveEventId((prev) =>
+                      prev === String(event.id) ? null : String(event.id)
+                    )
+                  }
+                  className="flex-1 rounded-lg border border-white/20 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                >
+                  {activeEventId === String(event.id) ? '隐藏参与者' : '查看参与者'}
+                </button>
+                <button
                   onClick={() => handleDeleteEvent(event.id)}
                   className="flex-1 rounded-lg border border-red-500/30 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10 transition-colors"
                 >
                   {t('admin.delete')}
                 </button>
               </div>
+              {activeEventId === String(event.id) && (
+                <div className="mt-4 space-y-2 border-t border-white/10 pt-3">
+                  {registrations
+                    .filter(
+                      (reg) =>
+                        String(reg.event_id) === String(event.id) &&
+                        reg.status !== 'cancelled_by_admin' &&
+                        reg.status !== 'cancelled_by_user'
+                    )
+                    .map((reg) => (
+                      <div key={reg.id} className="flex items-center justify-between rounded-lg border border-white/10 p-2">
+                        <div className="flex items-center gap-2">
+                          {reg.headshot_url ? (
+                            <img src={reg.headshot_url} alt={reg.name} className="h-8 w-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-white/10" />
+                          )}
+                          <span className="text-sm text-white/80">{reg.name}</span>
+                        </div>
+                        <button
+                          onClick={() => handleForceCancel(reg.id)}
+                          disabled={cancelingRegistrationId === String(reg.id)}
+                          className="rounded-md border border-red-500/30 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+                        >
+                          {cancelingRegistrationId === String(reg.id) ? '处理中...' : '取消资格'}
+                        </button>
+                      </div>
+                    ))}
+                  {!registrations.some(
+                    (reg) =>
+                      String(reg.event_id) === String(event.id) &&
+                      reg.status !== 'cancelled_by_admin' &&
+                      reg.status !== 'cancelled_by_user'
+                  ) && <p className="text-sm text-white/50">暂无参与者</p>}
+                </div>
+              )}
             </div>
           ))}
         </div>

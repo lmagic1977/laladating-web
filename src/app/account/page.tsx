@@ -165,6 +165,8 @@ export default function AccountPage() {
   };
 
   const onCancelEnrollment = async (eventId: string | number) => {
+    const ok = window.confirm('确认取消报名并退回额度吗？');
+    if (!ok) return;
     setError("");
     setCancelingId(String(eventId));
     try {

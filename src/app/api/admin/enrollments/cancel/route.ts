@@ -46,6 +46,38 @@ export async function POST(request: NextRequest) {
 
   const attendeeId = String(row.attendeeid || row.attendeeId || "");
   const payment = String(row.payment || "");
+
+  const eventId = String(row.eventid || row.eventId || "");
+  if (eventId) {
+    const eventRes = await fetch(
+      `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(eventId)}&select=*`,
+      {
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        cache: "no-store",
+      }
+    );
+    const eventRows = eventRes.ok ? ((await eventRes.json()) as Record<string, unknown>[]) : [];
+    const event = eventRows[0];
+    if (event) {
+      const date = String(event.date || "");
+      const time = String(event.time || "00:00");
+      const eventStart = new Date(`${date}T${time}`);
+      if (!Number.isNaN(eventStart.getTime())) {
+        const diffMs = eventStart.getTime() - Date.now();
+        const cutoffMs = 24 * 60 * 60 * 1000;
+        if (diffMs < cutoffMs) {
+          return NextResponse.json(
+            { error: "Only allowed before 24h of event start / 仅活动开始前24小时可取消资格" },
+            { status: 400 }
+          );
+        }
+      }
+    }
+  }
+
   if (attendeeId) refundForEvent(attendeeId, payment);
 
   const patchRes = await fetch(
