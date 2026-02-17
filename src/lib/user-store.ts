@@ -32,3 +32,18 @@ export function loginLocalUser(email: string, password: string) {
   if (!user) return null;
   return user;
 }
+
+export function listLocalUsers() {
+  return localUsers.map((user) => ({
+    id: user.id,
+    email: user.email,
+    name: user.name || "",
+  }));
+}
+
+export function resetLocalUserPassword(userId: string, newPassword: string) {
+  const target = localUsers.find((u) => u.id === userId);
+  if (!target) return false;
+  target.password = newPassword;
+  return true;
+}
