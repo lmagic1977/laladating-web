@@ -14,10 +14,10 @@ type EventItem = {
 
 type Enrollment = {
   id: string;
-  eventId: string;
+  eventid: string;
   status: string;
   payment: string;
-  createdAt: string;
+  createdat: string;
 };
 
 export default function AccountPage() {
@@ -31,7 +31,7 @@ export default function AccountPage() {
   const enrollmentMap = useMemo(() => {
     const m = new Set<string>();
     for (const item of enrollments) {
-      if (item.status === "paid") m.add(String(item.eventId));
+      if (item.status === "paid") m.add(String(item.eventid));
     }
     return m;
   }, [enrollments]);
@@ -136,6 +136,8 @@ export default function AccountPage() {
                     >
                       {payingId === String(event.id)
                         ? "Processing..."
+                        : isFreePrice(event.price)
+                        ? "Join Free / 免费报名"
                         : "Pay & Join / 支付并报名"}
                     </button>
                   )}
@@ -150,8 +152,8 @@ export default function AccountPage() {
         <div className="mt-3 space-y-2 text-sm text-white/70">
           {enrollments.length ? (
             enrollments.map((item) => (
-              <div key={item.id} className="flex items-center justify-between border-b border-white/10 pb-2">
-                <span>Event #{item.eventId}</span>
+                <div key={item.id} className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span>Event #{item.eventid}</span>
                 <span>{item.payment}</span>
               </div>
             ))
@@ -163,3 +165,7 @@ export default function AccountPage() {
     </div>
   );
 }
+  const isFreePrice = (price: string) => {
+    const v = String(price || "").trim().toLowerCase();
+    return v === "0" || v === "$0" || v === "free";
+  };

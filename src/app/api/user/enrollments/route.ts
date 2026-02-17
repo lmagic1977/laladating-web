@@ -5,11 +5,11 @@ import { getEvents } from "@/lib/db";
 
 type Enrollment = {
   id: string;
-  attendeeId: string;
-  eventId: string;
+  attendeeid: string;
+  eventid: string;
   payment: string;
   status: string;
-  createdAt: string;
+  createdat: string;
 };
 
 const localEnrollments: Enrollment[] = [];
@@ -36,7 +36,7 @@ function getUser() {
 
 async function fetchRemoteEnrollments(userId: string): Promise<Enrollment[]> {
   const res = await fetch(
-    `${supabaseUrl}/rest/v1/registrations?attendeeId=eq.${encodeURIComponent(userId)}&select=*`,
+    `${supabaseUrl}/rest/v1/registrations?attendeeid=eq.${encodeURIComponent(userId)}&select=*`,
     {
       headers: {
         apikey: serviceKey,
@@ -58,7 +58,7 @@ export async function GET() {
     return NextResponse.json(rows);
   }
 
-  return NextResponse.json(localEnrollments.filter((e) => e.attendeeId === user.userId));
+  return NextResponse.json(localEnrollments.filter((e) => e.attendeeid === user.userId));
 }
 
 export async function POST(request: Request) {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
   if (hasSupabase()) {
     const existing = await fetchRemoteEnrollments(user.userId);
-    const duplicate = existing.some((e) => e.eventId === eventId && e.status === "paid");
+    const duplicate = existing.some((e) => e.eventid === eventId && e.status === "paid");
     if (duplicate) {
       return NextResponse.json({ error: "Already enrolled in this event" }, { status: 409 });
     }
@@ -86,14 +86,16 @@ export async function POST(request: Request) {
     const eventRows = eventRes.ok ? ((await eventRes.json()) as Record<string, unknown>[]) : [];
     const event = eventRows[0] || getEvents().find((e) => String(e.id) === eventId);
     const amount = String((event as any)?.price || "$39");
+    const normalizedAmount = amount.trim();
+    const isFree = normalizedAmount === "0" || normalizedAmount === "$0" || /^free$/i.test(normalizedAmount);
 
     const payload: Enrollment = {
       id: String(Date.now()),
-      attendeeId: user.userId,
-      eventId,
-      payment: `paid:${amount}`,
+      attendeeid: user.userId,
+      eventid: eventId,
+      payment: isFree ? "free:0" : `paid:${amount}`,
       status: "paid",
-      createdAt: new Date().toISOString(),
+      createdat: new Date().toISOString(),
     };
 
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/registrations`, {
@@ -114,19 +116,21 @@ export async function POST(request: Request) {
   }
 
   const duplicate = localEnrollments.some(
-    (e) => e.attendeeId === user.userId && e.eventId === eventId && e.status === "paid"
+    (e) => e.attendeeid === user.userId && e.eventid === eventId && e.status === "paid"
   );
   if (duplicate) return NextResponse.json({ error: "Already enrolled in this event" }, { status: 409 });
 
   const localEvent = getEvents().find((e) => String(e.id) === eventId);
   const amount = localEvent?.price || "$39";
+  const normalizedAmount = String(amount).trim();
+  const isFree = normalizedAmount === "0" || normalizedAmount === "$0" || /^free$/i.test(normalizedAmount);
   const enrollment: Enrollment = {
     id: String(Date.now()),
-    attendeeId: user.userId,
-    eventId,
-    payment: `paid:${amount}`,
+    attendeeid: user.userId,
+    eventid: eventId,
+    payment: isFree ? "free:0" : `paid:${amount}`,
     status: "paid",
-    createdAt: new Date().toISOString(),
+    createdat: new Date().toISOString(),
   };
   localEnrollments.push(enrollment);
   return NextResponse.json({ ok: true, enrollment, paymentMode: "test_paid" });
