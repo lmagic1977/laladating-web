@@ -127,6 +127,18 @@ export async function POST(request: Request) {
         location: payload.location,
         price: payload.price,
         seats: payload.max_participants,
+        organizer_name: payload.organizer_name,
+        organizer_phone: payload.organizer_phone,
+        status: payload.status,
+      };
+      const withLegacyColumnsNoOrganizer = {
+        id,
+        title: payload.name,
+        date: payload.date,
+        time: payload.time,
+        location: payload.location,
+        price: payload.price,
+        seats: payload.max_participants,
         status: payload.status,
       };
 
@@ -151,6 +163,19 @@ export async function POST(request: Request) {
             Prefer: 'return=representation',
           },
           body: JSON.stringify(withLegacyColumns),
+        });
+      }
+
+      if (!insertResponse.ok) {
+        insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
+          method: 'POST',
+          headers: {
+            apikey: String(supabaseKey),
+            Authorization: `Bearer ${String(supabaseKey)}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify(withLegacyColumnsNoOrganizer),
         });
       }
 

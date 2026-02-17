@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type EventItem = {
   id: string | number;
@@ -47,6 +47,18 @@ type PassPackage = {
   originalPrice: number;
 };
 
+type ProfileForm = {
+  age: string;
+  job: string;
+  interests: string;
+  zodiac: string;
+  height_cm: string;
+  body_type: string;
+  headshot_url: string;
+  fullshot_url: string;
+  photos: string[];
+};
+
 export default function AccountPage() {
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("");
@@ -57,6 +69,23 @@ export default function AccountPage() {
   const [wallet, setWallet] = useState<WalletState>({ balance: 0, passes: [], ledger: [] });
   const [packages, setPackages] = useState<PassPackage[]>([]);
   const [topupAmount, setTopupAmount] = useState("100");
+  const [profile, setProfile] = useState<ProfileForm>({
+    age: "",
+    job: "",
+    interests: "",
+    zodiac: "",
+    height_cm: "",
+    body_type: "",
+    headshot_url: "",
+    fullshot_url: "",
+    photos: [],
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const isFreePrice = (price: string) => {
+    const v = String(price || "").trim().toLowerCase();
+    return v === "0" || v === "$0" || v === "free";
+  };
 
   const enrollmentMap = useMemo(() => {
     const m = new Set<string>();
@@ -75,16 +104,29 @@ export default function AccountPage() {
     }
     setEmail(session.user.email);
 
-    const [eventsRes, enrollmentsRes, walletRes, packageRes] = await Promise.all([
+    const [eventsRes, enrollmentsRes, walletRes, packageRes, profileRes] = await Promise.all([
       fetch("/api/events", { cache: "no-store" }),
       fetch("/api/user/enrollments", { cache: "no-store" }),
       fetch("/api/user/wallet", { cache: "no-store" }),
       fetch("/api/user/packages", { cache: "no-store" }),
+      fetch("/api/user/profile", { cache: "no-store" }),
     ]);
     setEvents(await eventsRes.json());
     setEnrollments(await enrollmentsRes.json());
     setWallet(await walletRes.json());
     setPackages(await packageRes.json());
+    const profileData = await profileRes.json();
+    setProfile({
+      age: profileData?.age ? String(profileData.age) : "",
+      job: profileData?.job || "",
+      interests: profileData?.interests || "",
+      zodiac: profileData?.zodiac || "",
+      height_cm: profileData?.height_cm ? String(profileData.height_cm) : "",
+      body_type: profileData?.body_type || "",
+      headshot_url: profileData?.headshot_url || "",
+      fullshot_url: profileData?.fullshot_url || "",
+      photos: Array.isArray(profileData?.photos) ? profileData.photos : [],
+    });
     setReady(true);
   };
 
@@ -156,6 +198,49 @@ export default function AccountPage() {
     await load();
   };
 
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const onUploadSingle = (field: "headshot_url" | "fullshot_url") =>
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const dataUrl = await fileToDataUrl(file);
+      setProfile((prev) => ({ ...prev, [field]: dataUrl }));
+    };
+
+  const onUploadMulti = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    const list = await Promise.all(Array.from(files).map(fileToDataUrl));
+    setProfile((prev) => ({ ...prev, photos: [...prev.photos, ...list].slice(0, 6) }));
+  };
+
+  const onSaveProfile = async () => {
+    setError("");
+    setSavingProfile(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || "Save profile failed");
+        return;
+      }
+      alert("个人资料已保存 / Profile saved");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   if (!ready) {
     return <div className="text-white/70">Loading...</div>;
   }
@@ -178,6 +263,46 @@ export default function AccountPage() {
       {error ? (
         <div className="rounded-lg border border-red-500/40 bg-red-500/20 p-3 text-sm text-red-200">{error}</div>
       ) : null}
+
+      <div className="neon-card p-5">
+        <h2 className="text-lg font-semibold">Profile / 个人信息</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <input value={profile.age} onChange={(e) => setProfile({ ...profile, age: e.target.value })} placeholder="年龄 Age" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+          <input value={profile.job} onChange={(e) => setProfile({ ...profile, job: e.target.value })} placeholder="工作 Job" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+          <input value={profile.interests} onChange={(e) => setProfile({ ...profile, interests: e.target.value })} placeholder="兴趣爱好 Interests" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+          <input value={profile.zodiac} onChange={(e) => setProfile({ ...profile, zodiac: e.target.value })} placeholder="星座 Zodiac" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+          <input value={profile.height_cm} onChange={(e) => setProfile({ ...profile, height_cm: e.target.value })} placeholder="身高(cm) Height" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+          <input value={profile.body_type} onChange={(e) => setProfile({ ...profile, body_type: e.target.value })} placeholder="身材类型 Body Type" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <div>
+            <p className="mb-2 text-sm text-white/70">头像照片</p>
+            <input type="file" accept="image/*" onChange={onUploadSingle("headshot_url")} className="text-sm" />
+            {profile.headshot_url ? <img src={profile.headshot_url} alt="headshot" className="mt-2 h-16 w-16 rounded-full object-cover" /> : null}
+          </div>
+          <div>
+            <p className="mb-2 text-sm text-white/70">全身照片</p>
+            <input type="file" accept="image/*" onChange={onUploadSingle("fullshot_url")} className="text-sm" />
+            {profile.fullshot_url ? <img src={profile.fullshot_url} alt="fullshot" className="mt-2 h-20 w-16 rounded object-cover" /> : null}
+          </div>
+          <div>
+            <p className="mb-2 text-sm text-white/70">更多照片（最多6张）</p>
+            <input type="file" accept="image/*" multiple onChange={onUploadMulti} className="text-sm" />
+            <div className="mt-2 flex flex-wrap gap-2">
+              {profile.photos.map((p, idx) => (
+                <img key={idx} src={p} alt={`photo-${idx}`} className="h-14 w-14 rounded object-cover" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={onSaveProfile}
+          disabled={savingProfile}
+          className="mt-4 rounded-full px-4 py-2 text-xs font-semibold neon-button disabled:opacity-60"
+        >
+          {savingProfile ? "Saving..." : "保存资料 / Save Profile"}
+        </button>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="neon-card p-5">
@@ -291,7 +416,3 @@ export default function AccountPage() {
     </div>
   );
 }
-  const isFreePrice = (price: string) => {
-    const v = String(price || "").trim().toLowerCase();
-    return v === "0" || v === "$0" || v === "free";
-  };
