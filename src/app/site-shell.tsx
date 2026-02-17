@@ -1,9 +1,20 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { LangToggle, useLanguage } from '@/lib/LanguageContext';
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      const res = await fetch('/api/user/session', { cache: 'no-store' });
+      const data = await res.json();
+      setLoggedIn(Boolean(data?.authenticated));
+    };
+    check();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -19,11 +30,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <a href="/events" className="flex-1 text-center hover:text-white">{t('nav.events')}</a>
             <a href="/register" className="flex-1 text-center hover:text-white">{t('nav.register')}</a>
             <a href="/onsite" className="flex-1 text-center hover:text-white">{t('nav.onsite')}</a>
+            <a href={loggedIn ? "/account" : "/auth"} className="flex-1 text-center hover:text-white">
+              {loggedIn ? "Account" : "Login"}
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <LangToggle />
-            <a href="/register" className="rounded-full px-4 py-2 text-sm font-semibold neon-button">
-              {t('nav.cta')}
+            <a href={loggedIn ? "/account" : "/auth"} className="rounded-full px-4 py-2 text-sm font-semibold neon-button">
+              {loggedIn ? "My Account" : t('nav.cta')}
             </a>
           </div>
         </div>
