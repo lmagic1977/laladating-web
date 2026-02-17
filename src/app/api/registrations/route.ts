@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const eventId = searchParams.get('event_id');
   const registrations = getRegistrations();
   const filtered = eventId 
-    ? registrations.filter(r => r.event_id === parseInt(eventId))
+    ? registrations.filter(r => String(r.event_id) === String(eventId))
     : registrations;
   return NextResponse.json(filtered);
 }
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const eventId = Number(data.event_id || data.eventId || 1);
   const registrations = getRegistrations();
   
-  if (!data.name || !data.email || !data.phone || !data.age || !data.gender || !lookingFor) {
+  if (!data.name || !data.email || !data.phone || !data.age || !data.gender || !lookingFor || !data.headshot_url || !data.fullshot_url) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
@@ -29,6 +29,8 @@ export async function POST(request: Request) {
     gender: data.gender,
     looking_for: lookingFor,
     event_id: eventId,
+    headshot_url: data.headshot_url,
+    fullshot_url: data.fullshot_url,
   };
 
   if (isDuplicateRegistration(payload, registrations)) {

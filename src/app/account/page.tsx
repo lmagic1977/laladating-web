@@ -243,9 +243,17 @@ export default function AccountPage() {
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-pink-300">{event.price}</span>
                   {joined ? (
-                    <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-300">
-                      Joined / 已报名
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-300">
+                        Joined / 已报名
+                      </span>
+                      <a
+                        href={`/events/${event.id}`}
+                        className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+                      >
+                        报名详情
+                      </a>
+                    </div>
                   ) : (
                     <button
                       onClick={() => onPayAndJoin(event.id)}

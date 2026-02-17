@@ -8,6 +8,8 @@ export interface Event {
   price: string;
   age_range: string;
   max_participants: number;
+  organizer_name?: string;
+  organizer_phone?: string;
   status: 'active' | 'closed';
   created_at: string;
 }
@@ -21,6 +23,8 @@ export interface Registration {
   gender: string;
   looking_for: string;
   event_id: number;
+  headshot_url: string;
+  fullshot_url: string;
   created_at: string;
 }
 

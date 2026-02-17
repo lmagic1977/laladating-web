@@ -45,6 +45,12 @@ export default function EventsPage() {
               <span>{event.date} · {event.time}</span>
               <span className="text-pink-300">{event.price}</span>
             </div>
+            <a
+              href={`/events/${event.id}`}
+              className="mt-4 inline-block rounded-full border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+            >
+              报名详情
+            </a>
           </div>
         ))}
         {!events.length && <div className="text-white/60">{t('common.loading')}</div>}

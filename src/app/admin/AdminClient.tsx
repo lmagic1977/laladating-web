@@ -12,6 +12,8 @@ interface Event {
   price: string;
   age_range: string;
   max_participants: number;
+  organizer_name?: string;
+  organizer_phone?: string;
   status: 'active' | 'closed';
 }
 
@@ -40,6 +42,8 @@ export default function AdminPage() {
     location: '',
     price: '',
     ageRange: '',
+    organizerName: '',
+    organizerPhone: '',
     maxParticipants: 20,
   });
 
@@ -92,6 +96,8 @@ export default function AdminPage() {
         location: '',
         price: '',
         ageRange: '',
+        organizerName: '',
+        organizerPhone: '',
         maxParticipants: 20,
       });
     } catch (error) {
@@ -227,6 +233,24 @@ export default function AdminPage() {
                 placeholder="20-30"
                 className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">组织人</label>
+              <input
+                type="text"
+                value={newEvent.organizerName}
+                onChange={(e) => setNewEvent({ ...newEvent, organizerName: e.target.value })}
+                className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">组织人电话</label>
+              <input
+                type="text"
+                value={newEvent.organizerPhone}
+                onChange={(e) => setNewEvent({ ...newEvent, organizerPhone: e.target.value })}
+                className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
               />
             </div>
           </div>

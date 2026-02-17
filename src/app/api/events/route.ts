@@ -31,6 +31,8 @@ function mapRowToEvent(row: Record<string, unknown>) {
     price: String(row.price || ''),
     age_range: String(row.age_range || ''),
     max_participants: Number(row.max_participants || row.seats || 20),
+    organizer_name: String(row.organizer_name || ''),
+    organizer_phone: String(row.organizer_phone || ''),
     status: row.status === 'closed' ? 'closed' : 'active',
   };
 }
@@ -73,6 +75,8 @@ export async function POST(request: Request) {
       price: String(data.price || ''),
       age_range: String(data.age_range || data.ageRange || ''),
       max_participants: Number(data.max_participants || data.maxParticipants || 20),
+      organizer_name: String(data.organizer_name || data.organizerName || ''),
+      organizer_phone: String(data.organizer_phone || data.organizerPhone || ''),
       status: data.status === 'closed' ? 'closed' : 'active',
     } as const;
 
@@ -110,6 +114,8 @@ export async function POST(request: Request) {
         price: payload.price,
         age_range: payload.age_range,
         max_participants: payload.max_participants,
+        organizer_name: payload.organizer_name,
+        organizer_phone: payload.organizer_phone,
         status: payload.status,
         created_at: new Date().toISOString(),
       };

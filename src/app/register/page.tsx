@@ -12,6 +12,8 @@ export default function RegisterPage() {
     age: '',
     gender: '',
     lookingFor: '',
+    headshotUrl: '',
+    fullshotUrl: '',
   });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,7 +24,7 @@ export default function RegisterPage() {
     e.preventDefault();
     if (isSubmitting) return;
     
-    if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.gender || !formData.lookingFor) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.gender || !formData.lookingFor || !formData.headshotUrl || !formData.fullshotUrl) {
       setError(true);
       setErrorMessage(t('register.error'));
       return;
@@ -33,7 +35,11 @@ export default function RegisterPage() {
       const response = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          headshot_url: formData.headshotUrl,
+          fullshot_url: formData.fullshotUrl,
+        }),
       });
 
       if (response.ok) {
@@ -57,6 +63,19 @@ export default function RegisterPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const handleFileChange = (field: 'headshotUrl' | 'fullshotUrl') =>
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      setFormData((prev) => ({ ...prev, [field]: dataUrl }));
+    };
 
   if (submitted) {
     return (
@@ -141,7 +160,7 @@ export default function RegisterPage() {
               className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
               required
             >
-              <option value="" className="bg-gray-900">{t('common.loading')}</option>
+              <option value="" className="bg-gray-900">{t('common.select')}</option>
               <option value="male" className="bg-gray-900">{t('register.male')}</option>
               <option value="female" className="bg-gray-900">{t('register.female')}</option>
               <option value="other" className="bg-gray-900">{t('register.other')}</option>
@@ -158,11 +177,33 @@ export default function RegisterPage() {
               className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white focus:border-pink-500 focus:outline-none"
               required
             >
-              <option value="" className="bg-gray-900">{t('common.loading')}</option>
+              <option value="" className="bg-gray-900">{t('common.select')}</option>
               <option value="men" className="bg-gray-900">{t('register.men')}</option>
               <option value="women" className="bg-gray-900">{t('register.women')}</option>
               <option value="everyone" className="bg-gray-900">{t('register.everyone')}</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">头像照片 *</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange('headshotUrl')}
+              className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">全身照片 *</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange('fullshotUrl')}
+              className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-2 text-white"
+              required
+            />
           </div>
         </div>
 

@@ -127,6 +127,7 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Common
     'common.loading': 'Loading...',
+    'common.select': 'Please select',
     'common.save': 'Save',
     'common.cancel': 'Cancel',
     'common.delete': 'Delete',
@@ -262,6 +263,7 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Common
     'common.loading': '加载中...',
+    'common.select': '请选择',
     'common.save': '保存',
     'common.cancel': '取消',
     'common.delete': '删除',
