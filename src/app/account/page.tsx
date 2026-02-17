@@ -66,6 +66,7 @@ export default function AccountPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [error, setError] = useState("");
   const [payingId, setPayingId] = useState<string>("");
+  const [cancelingId, setCancelingId] = useState<string>("");
   const [wallet, setWallet] = useState<WalletState>({ balance: 0, passes: [], ledger: [] });
   const [packages, setPackages] = useState<PassPackage[]>([]);
   const [topupAmount, setTopupAmount] = useState("100");
@@ -160,6 +161,25 @@ export default function AccountPage() {
       alert("Payment success and registration completed / 支付成功，报名已完成");
     } finally {
       setPayingId("");
+    }
+  };
+
+  const onCancelEnrollment = async (eventId: string | number) => {
+    setError("");
+    setCancelingId(String(eventId));
+    try {
+      const res = await fetch(`/api/user/enrollments?eventId=${encodeURIComponent(String(eventId))}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || "Cancel failed");
+        return;
+      }
+      await load();
+      alert("报名已取消，额度已退回 / Enrollment cancelled and credit refunded");
+    } finally {
+      setCancelingId("");
     }
   };
 
@@ -378,6 +398,13 @@ export default function AccountPage() {
                       >
                         报名详情
                       </a>
+                      <button
+                        onClick={() => onCancelEnrollment(event.id)}
+                        disabled={cancelingId === String(event.id)}
+                        className="rounded-full border border-red-400/40 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+                      >
+                        {cancelingId === String(event.id) ? "Cancelling..." : "取消报名"}
+                      </button>
                     </div>
                   ) : (
                     <button

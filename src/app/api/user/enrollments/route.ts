@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { USER_AUTH_COOKIE, verifyUserSessionToken } from "@/lib/user-auth";
 import { getEvents } from "@/lib/db";
-import { chargeForEvent } from "@/lib/user-finance";
+import { chargeForEvent, refundForEvent } from "@/lib/user-finance";
 
 type Enrollment = {
   id: string;
@@ -39,6 +39,15 @@ function hasSupabase() {
 function getUser() {
   const token = cookies().get(USER_AUTH_COOKIE)?.value;
   return verifyUserSessionToken(token);
+}
+
+function getEventStartTime(event: Record<string, unknown> | undefined) {
+  if (!event) return null;
+  const date = String(event.date || "");
+  const time = String(event.time || "00:00");
+  const dt = new Date(`${date}T${time}`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt;
 }
 
 async function fetchRemoteEnrollments(userId: string): Promise<Enrollment[]> {
@@ -169,4 +178,73 @@ export async function POST(request: Request) {
   };
   localEnrollments.push(enrollment);
   return NextResponse.json({ ok: true, enrollment, paymentMode: payment });
+}
+
+export async function DELETE(request: Request) {
+  const user = getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const eventId = String(searchParams.get("eventId") || "");
+  if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
+
+  if (hasSupabase()) {
+    const existing = await fetchRemoteEnrollments(user.userId);
+    const target = existing.find((e) => e.eventid === eventId && e.status === "paid");
+    if (!target) return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
+
+    const eventRes = await fetch(`${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(eventId)}&select=*`, {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      cache: "no-store",
+    });
+    const eventRows = eventRes.ok ? ((await eventRes.json()) as Record<string, unknown>[]) : [];
+    const event = eventRows[0] || (getEvents().find((e) => String(e.id) === eventId) as unknown as Record<string, unknown>);
+    const start = getEventStartTime(event);
+    if (start) {
+      const diffMs = start.getTime() - Date.now();
+      const cutoffMs = 24 * 60 * 60 * 1000;
+      if (diffMs < cutoffMs) {
+        return NextResponse.json({ error: "Cancellation is only allowed 24h before event / 活动开始前24小时可取消" }, { status: 400 });
+      }
+    }
+
+    refundForEvent(user.userId, target.payment);
+    const patchRes = await fetch(
+      `${supabaseUrl}/rest/v1/registrations?id=eq.${encodeURIComponent(target.id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({ status: "cancelled_by_user" }),
+      }
+    );
+    if (!patchRes.ok) return NextResponse.json({ error: await patchRes.text() }, { status: 500 });
+    return NextResponse.json({ ok: true, refunded: true });
+  }
+
+  const idx = localEnrollments.findIndex(
+    (e) => e.attendeeid === user.userId && e.eventid === eventId && e.status === "paid"
+  );
+  if (idx < 0) return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
+
+  const localEvent = getEvents().find((e) => String(e.id) === eventId);
+  const start = localEvent ? new Date(`${localEvent.date}T${localEvent.time}`) : null;
+  if (start && !Number.isNaN(start.getTime())) {
+    const diffMs = start.getTime() - Date.now();
+    const cutoffMs = 24 * 60 * 60 * 1000;
+    if (diffMs < cutoffMs) {
+      return NextResponse.json({ error: "Cancellation is only allowed 24h before event / 活动开始前24小时可取消" }, { status: 400 });
+    }
+  }
+
+  refundForEvent(user.userId, localEnrollments[idx].payment);
+  localEnrollments[idx].status = "cancelled_by_user";
+  return NextResponse.json({ ok: true, refunded: true });
 }

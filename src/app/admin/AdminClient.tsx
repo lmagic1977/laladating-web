@@ -25,8 +25,10 @@ interface Registration {
   age: number;
   gender: string;
   looking_for: string;
-  event_id: number;
+  event_id: number | string;
   created_at: string;
+  status?: string;
+  payment?: string;
 }
 
 export default function AdminPage() {
@@ -34,6 +36,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'events' | 'registrations'>('events');
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [cancelingRegistrationId, setCancelingRegistrationId] = useState<string>('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newEvent, setNewEvent] = useState({
     name: '',
@@ -123,6 +126,29 @@ export default function AdminPage() {
     a.href = url;
     a.download = 'registrations.csv';
     a.click();
+  };
+
+  const handleForceCancel = async (registrationId: number) => {
+    setCancelingRegistrationId(String(registrationId));
+    try {
+      const response = await fetch('/api/admin/enrollments/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationId: String(registrationId) }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        alert(data?.error || 'Force cancel failed');
+        return;
+      }
+      setRegistrations((prev) =>
+        prev.map((item) =>
+          item.id === registrationId ? { ...item, status: 'cancelled_by_admin' } : item
+        )
+      );
+    } finally {
+      setCancelingRegistrationId('');
+    }
   };
 
   const handleLogout = async () => {
@@ -316,6 +342,8 @@ export default function AdminPage() {
                     <th className="px-4 py-3 text-left text-sm font-medium text-white/60">{t('register.phone')}</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-white/60">{t('register.age')}</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-white/60">{t('register.gender')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-white/60">状态</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-white/60">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
@@ -326,6 +354,16 @@ export default function AdminPage() {
                       <td className="px-4 py-3 text-white/60">{reg.phone}</td>
                       <td className="px-4 py-3 text-white/60">{reg.age}</td>
                       <td className="px-4 py-3 text-white/60">{reg.gender}</td>
+                      <td className="px-4 py-3 text-white/60">{reg.status || 'paid'}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleForceCancel(reg.id)}
+                          disabled={cancelingRegistrationId === String(reg.id)}
+                          className="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+                        >
+                          {cancelingRegistrationId === String(reg.id) ? '处理中...' : '强制取消并退回'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

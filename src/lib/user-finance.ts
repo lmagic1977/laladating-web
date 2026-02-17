@@ -100,3 +100,30 @@ export function chargeForEvent(userId: string, amount: number) {
   pushLedger(userId, "event", -amount, "Pay event from wallet");
   return { method: "wallet" as const };
 }
+
+export function refundForEvent(userId: string, payment: string) {
+  const value = String(payment || "");
+  if (value.startsWith("wallet:$")) {
+    const amount = Number(value.replace("wallet:$", ""));
+    if (Number.isFinite(amount) && amount > 0) {
+      const current = walletBalanceByUser.get(userId) || 0;
+      walletBalanceByUser.set(userId, current + amount);
+      pushLedger(userId, "event", amount, "Refund to wallet");
+    }
+    return { method: "wallet_refund" as const };
+  }
+
+  if (value.startsWith("pass:")) {
+    const packageId = value.replace("pass:", "");
+    const passes = userPassesByUser.get(userId) || [];
+    const pass = passes.find((p) => p.packageId === packageId);
+    if (pass) {
+      pass.remaining = Math.min(pass.total, pass.remaining + 1);
+      userPassesByUser.set(userId, passes);
+      pushLedger(userId, "event", 0, `Refund pass credit (${pass.title})`);
+    }
+    return { method: "pass_refund" as const, packageId };
+  }
+
+  return { method: "none" as const };
+}
