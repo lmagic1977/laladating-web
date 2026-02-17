@@ -32,12 +32,24 @@ interface Registration {
   payment?: string;
 }
 
+interface Member {
+  id: string;
+  email: string;
+  name?: string;
+  created_at?: string;
+  wallet_balance?: number;
+}
+
 export default function AdminPage() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'events' | 'registrations'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'registrations' | 'members'>('events');
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [cancelingRegistrationId, setCancelingRegistrationId] = useState<string>('');
+  const [memberActionLoadingId, setMemberActionLoadingId] = useState<string>('');
+  const [resetPasswords, setResetPasswords] = useState<Record<string, string>>({});
+  const [topupValues, setTopupValues] = useState<Record<string, string>>({});
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -65,9 +77,22 @@ export default function AdminPage() {
       setRegistrations(Array.isArray(data) ? data : []);
     };
 
+    const loadMembers = async () => {
+      const res = await fetch('/api/admin/members', { cache: 'no-store' });
+      const data = await res.json().catch(() => []);
+      setMembers(Array.isArray(data) ? data : []);
+    };
+
     loadEvents();
     loadRegistrations();
+    loadMembers();
   }, [t]);
+
+  const reloadMembers = async () => {
+    const res = await fetch('/api/admin/members', { cache: 'no-store' });
+    const data = await res.json().catch(() => []);
+    setMembers(Array.isArray(data) ? data : []);
+  };
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +187,63 @@ export default function AdminPage() {
     window.location.href = "/admin/login";
   };
 
+  const handleResetPassword = async (member: Member) => {
+    const newPassword = String(resetPasswords[member.id] || '').trim();
+    if (!newPassword || newPassword.length < 6) {
+      alert('新密码至少6位 / Password must be at least 6 characters');
+      return;
+    }
+    const ok = window.confirm(`确认重设该会员密码？\\n${member.email}`);
+    if (!ok) return;
+
+    setMemberActionLoadingId(member.id);
+    try {
+      const res = await fetch('/api/admin/members/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: member.id, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data?.error || '重设密码失败');
+        return;
+      }
+      setResetPasswords((prev) => ({ ...prev, [member.id]: '' }));
+      alert('密码已重设 / Password reset completed');
+    } finally {
+      setMemberActionLoadingId('');
+    }
+  };
+
+  const handleMemberTopup = async (member: Member) => {
+    const amount = Number(topupValues[member.id] || 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('充值金额无效');
+      return;
+    }
+    const ok = window.confirm(`确认给会员充值 $${amount} ?\\n${member.email}`);
+    if (!ok) return;
+
+    setMemberActionLoadingId(member.id);
+    try {
+      const res = await fetch('/api/admin/members/topup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: member.id, amount }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data?.error || '充值失败');
+        return;
+      }
+      await reloadMembers();
+      setTopupValues((prev) => ({ ...prev, [member.id]: '' }));
+      alert('充值成功 / Top-up completed');
+    } finally {
+      setMemberActionLoadingId('');
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -199,6 +281,14 @@ export default function AdminPage() {
           }`}
         >
           {t('admin.registrations')} ({registrations.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('members')}
+          className={`px-4 py-2 rounded-lg transition-colors ${
+            activeTab === 'members' ? 'bg-pink-500/20 text-pink-300' : 'text-white/60 hover:bg-white/10'
+          }`}
+        >
+          会员管理 ({members.length})
         </button>
       </div>
 
@@ -422,6 +512,67 @@ export default function AdminPage() {
               </table>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'members' && (
+        <div className="space-y-3">
+          {members.length === 0 ? (
+            <div className="neon-card p-6 text-white/60">暂无会员</div>
+          ) : (
+            members.map((member) => (
+              <div key={member.id} className="neon-card p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">{member.name || member.email}</p>
+                    <p className="text-sm text-white/60">{member.email}</p>
+                    <p className="text-sm text-cyan-300 mt-1">
+                      钱包余额 / Wallet: ${Number(member.wallet_balance || 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="password"
+                        value={resetPasswords[member.id] || ''}
+                        onChange={(e) =>
+                          setResetPasswords((prev) => ({ ...prev, [member.id]: e.target.value }))
+                        }
+                        placeholder="新密码(至少6位)"
+                        className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
+                      />
+                      <button
+                        onClick={() => handleResetPassword(member)}
+                        disabled={memberActionLoadingId === member.id}
+                        className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white/80 hover:bg-white/10 disabled:opacity-60"
+                      >
+                        重设密码
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        value={topupValues[member.id] || ''}
+                        onChange={(e) =>
+                          setTopupValues((prev) => ({ ...prev, [member.id]: e.target.value }))
+                        }
+                        placeholder="充值金额"
+                        className="w-28 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
+                      />
+                      <button
+                        onClick={() => handleMemberTopup(member)}
+                        disabled={memberActionLoadingId === member.id}
+                        className="rounded-lg border border-pink-500/30 px-3 py-2 text-xs text-pink-300 hover:bg-pink-500/10 disabled:opacity-60"
+                      >
+                        充值
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

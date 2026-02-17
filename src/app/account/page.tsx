@@ -266,6 +266,16 @@ export default function AccountPage() {
       ) : null}
 
       <div className="neon-card p-5">
+        <h2 className="text-lg font-semibold">Event Registration / 活动报名</h2>
+        <p className="mt-2 text-sm text-white/70">
+          请先填写报名资料（含头像和全身照），再在下方活动列表完成支付报名。
+        </p>
+        <a href="/register" className="mt-4 inline-block rounded-full px-4 py-2 text-xs font-semibold neon-button">
+          填写报名资料 / Complete Registration Profile
+        </a>
+      </div>
+
+      <div className="neon-card p-5">
         <h2 className="text-lg font-semibold">Profile / 个人信息</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <input value={profile.age} onChange={(e) => setProfile({ ...profile, age: e.target.value })} placeholder="年龄 Age" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
