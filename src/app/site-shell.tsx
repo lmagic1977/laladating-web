@@ -41,6 +41,17 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </a>
           </div>
         </div>
+        <nav className="md:hidden border-t border-white/10 px-4 py-3">
+          <div className="grid grid-cols-5 text-center text-sm font-semibold text-white/80">
+            <a href="/" className="hover:text-white">{t('nav.home')}</a>
+            <a href="/events" className="hover:text-white">{t('nav.events')}</a>
+            <a href="/register" className="hover:text-white">{t('nav.register')}</a>
+            <a href="/onsite" className="hover:text-white">{t('nav.onsite')}</a>
+            <a href={loggedIn ? "/account" : "/auth"} className="hover:text-white">
+              {loggedIn ? "Account" : "Login"}
+            </a>
+          </div>
+        </nav>
       </header>
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
       <footer className="mx-auto w-full max-w-6xl px-6 pb-10 text-sm text-white/60">
