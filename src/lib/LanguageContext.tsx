@@ -49,9 +49,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t, isLocaleReady }}>
-      <body className="min-h-screen">
-        {children}
-      </body>
+      {children}
     </LanguageContext.Provider>
   );
 }
