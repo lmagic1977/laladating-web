@@ -141,8 +141,8 @@ export async function POST(request: Request) {
 
   if (hasSupabase()) {
     const existing = await fetchRemoteEnrollments(user.userId);
-    const duplicate = existing.some((e) => e.eventid === eventId && e.status === "paid");
-    if (duplicate) {
+    const sameEvent = existing.find((e) => e.eventid === eventId);
+    if (sameEvent && (sameEvent.status === "paid" || sameEvent.status === "registered")) {
       return NextResponse.json({ error: "Already enrolled in this event" }, { status: 409 });
     }
 
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
         : `wallet:$${amountNumber}`;
 
     const payload: Enrollment = {
-      id: String(Date.now()),
+      id: sameEvent?.id || String(Date.now()),
       attendeeid: user.userId,
       eventid: eventId,
       payment,
@@ -187,8 +187,12 @@ export async function POST(request: Request) {
       fullshot_url: String(profile?.fullshot_url || ""),
     };
 
-    const insertRes = await fetch(`${supabaseUrl}/rest/v1/registrations`, {
-      method: "POST",
+    const url = sameEvent
+      ? `${supabaseUrl}/rest/v1/registrations?id=eq.${encodeURIComponent(sameEvent.id)}`
+      : `${supabaseUrl}/rest/v1/registrations`;
+    const method = sameEvent ? "PATCH" : "POST";
+    const saveRes = await fetch(url, {
+      method,
       headers: {
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
@@ -197,17 +201,19 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify(payload),
     });
-    if (!insertRes.ok) {
-      return NextResponse.json({ error: await insertRes.text() }, { status: 500 });
+    if (!saveRes.ok) {
+      return NextResponse.json({ error: await saveRes.text() }, { status: 500 });
     }
-    const created = (await insertRes.json()) as Enrollment[];
-    return NextResponse.json({ ok: true, enrollment: created[0], paymentMode: payment });
+    const saved = (await saveRes.json()) as Enrollment[];
+    return NextResponse.json({ ok: true, enrollment: saved[0] || payload, paymentMode: payment });
   }
 
-  const duplicate = localEnrollments.some(
-    (e) => e.attendeeid === user.userId && e.eventid === eventId && e.status === "paid"
+  const sameEventLocal = localEnrollments.find(
+    (e) => e.attendeeid === user.userId && e.eventid === eventId
   );
-  if (duplicate) return NextResponse.json({ error: "Already enrolled in this event" }, { status: 409 });
+  if (sameEventLocal && (sameEventLocal.status === "paid" || sameEventLocal.status === "registered")) {
+    return NextResponse.json({ error: "Already enrolled in this event" }, { status: 409 });
+  }
 
   const localEvent = getEvents().find((e) => String(e.id) === eventId);
   const amountText = localEvent?.price || "$39";
@@ -228,7 +234,7 @@ export async function POST(request: Request) {
       ? `pass:${charge.packageId}`
       : `wallet:$${amountNumber}`;
   const enrollment: Enrollment = {
-    id: String(Date.now()),
+    id: sameEventLocal?.id || String(Date.now()),
     attendeeid: user.userId,
     eventid: eventId,
     payment,
@@ -240,7 +246,11 @@ export async function POST(request: Request) {
     headshot_url: String(profile?.headshot_url || ""),
     fullshot_url: String(profile?.fullshot_url || ""),
   };
-  localEnrollments.push(enrollment);
+  if (sameEventLocal) {
+    Object.assign(sameEventLocal, enrollment);
+  } else {
+    localEnrollments.push(enrollment);
+  }
   return NextResponse.json({ ok: true, enrollment, paymentMode: payment });
 }
 

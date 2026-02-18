@@ -23,6 +23,27 @@ function hasSupabaseConfig() {
   return Boolean(supabaseUrl && supabaseKey);
 }
 
+function dedupeByUserAndEvent(rows: Record<string, unknown>[]) {
+  const map = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    const eventId = String(row.event_id || row.eventid || row.eventId || '');
+    const attendeeId = String(row.attendeeid || row.attendeeId || row.email || '');
+    const key = `${eventId}::${attendeeId}`;
+    const current = map.get(key);
+    if (!current) {
+      map.set(key, row);
+      continue;
+    }
+
+    const currentTime = new Date(String(current.created_at || current.createdat || 0)).getTime() || 0;
+    const nextTime = new Date(String(row.created_at || row.createdat || 0)).getTime() || 0;
+    if (nextTime >= currentTime) {
+      map.set(key, row);
+    }
+  }
+  return Array.from(map.values());
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get('event_id');
@@ -56,7 +77,8 @@ export async function GET(request: Request) {
           : Promise.resolve(new Response('[]', { status: 200 })),
       ]);
 
-      const regRows = regRes.ok ? ((await regRes.json()) as Record<string, unknown>[]) : [];
+      const regRowsRaw = regRes.ok ? ((await regRes.json()) as Record<string, unknown>[]) : [];
+      const regRows = dedupeByUserAndEvent(regRowsRaw);
       const profileRows = profileRes.ok ? ((await profileRes.json()) as Record<string, unknown>[]) : [];
       const profileMap = new Map(profileRows.map((p) => [String(p.user_id || ''), p]));
       const authJson = authUsersRes.ok
@@ -110,9 +132,10 @@ export async function GET(request: Request) {
   }
 
   const local = getRegistrations();
+  const dedupedLocal = dedupeByUserAndEvent(local as unknown as Record<string, unknown>[]) as typeof local;
   const filtered = eventId
-    ? local.filter((r) => String(r.event_id) === String(eventId))
-    : local;
+    ? dedupedLocal.filter((r) => String(r.event_id) === String(eventId))
+    : dedupedLocal;
   return NextResponse.json(filtered);
 }
 
