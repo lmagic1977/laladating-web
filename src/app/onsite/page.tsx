@@ -3,10 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 
+type OnsiteEvent = {
+  id: string;
+  name: string;
+  date: string;
+  time: string;
+  location: string;
+  event_code: string;
+};
+
 export default function OnsitePage() {
   const { t } = useLanguage();
   const [eventCode, setEventCode] = useState('');
   const [joined, setJoined] = useState(false);
+  const [joinError, setJoinError] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [eventInfo, setEventInfo] = useState<OnsiteEvent | null>(null);
   const [currentRound, setCurrentRound] = useState(1);
   const [totalRounds] = useState(8);
   const [timeLeft, setTimeLeft] = useState(5);
@@ -31,9 +43,35 @@ export default function OnsitePage() {
     return () => clearInterval(timer);
   }, [joined, isBreak]);
 
-  const handleJoin = () => {
-    if (eventCode.trim()) {
+  const handleJoin = async () => {
+    const code = eventCode.trim();
+    if (!code) {
+      setJoinError('请输入活动代码 / Please enter event code');
+      return;
+    }
+
+    setJoinError('');
+    setJoining(true);
+    try {
+      const response = await fetch('/api/onsite/enter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = String(data?.error || '无法进入现场 / Unable to enter onsite');
+        setJoinError(message);
+        if (response.status === 401) {
+          window.location.href = '/auth';
+        }
+        return;
+      }
+
+      setEventInfo(data?.event || null);
       setJoined(true);
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -49,7 +87,6 @@ export default function OnsitePage() {
 
   const handleVote = (index: number) => {
     setVotes((prev) => [...prev, index]);
-    // Move to next round after voting
     handleNextRound();
   };
 
@@ -67,21 +104,23 @@ export default function OnsitePage() {
     return (
       <div className="max-w-md mx-auto text-center py-12">
         <h1 className="text-3xl font-semibold mb-8">{t('onsite.title')}</h1>
-        
+
         <div className="neon-card p-8">
           <h2 className="text-xl font-semibold mb-4">{t('onsite.enter_code')}</h2>
           <input
             type="text"
             value={eventCode}
-            onChange={(e) => setEventCode(e.target.value)}
+            onChange={(e) => setEventCode(e.target.value.toUpperCase())}
             placeholder={t('onsite.event_code')}
             className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-center text-lg text-white placeholder-white/40 focus:border-pink-500 focus:outline-none mb-6"
           />
+          {joinError ? <p className="mb-4 text-sm text-red-300">{joinError}</p> : null}
           <button
             onClick={handleJoin}
-            className="w-full rounded-full px-6 py-3 text-sm font-semibold neon-button"
+            disabled={joining}
+            className="w-full rounded-full px-6 py-3 text-sm font-semibold neon-button disabled:opacity-60"
           >
-            {t('onsite.enter_code')}
+            {joining ? t('common.loading') : t('onsite.enter_code')}
           </button>
         </div>
       </div>
@@ -152,6 +191,11 @@ export default function OnsitePage() {
     <div className="max-w-md mx-auto py-12">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold">{t('onsite.title')}</h1>
+        {eventInfo ? (
+          <p className="text-white/60 mt-2 text-sm">
+            {eventInfo.name} · {eventInfo.date} {eventInfo.time}
+          </p>
+        ) : null}
         <p className="text-white/60 mt-2">
           {t('onsite.round_of')} {currentRound} {t('onsite.of')} {totalRounds}
         </p>

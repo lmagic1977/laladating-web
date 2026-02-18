@@ -28,6 +28,7 @@ function mapRowToEvent(row: Record<string, unknown>) {
     date: String(row.date || ''),
     time: String(row.time || ''),
     location: String(row.location || ''),
+    event_code: String(row.event_code || row.code || ''),
     price: String(row.price || ''),
     age_range: String(row.age_range || ''),
     max_participants: Number(row.max_participants || row.seats || 20),
@@ -35,6 +36,30 @@ function mapRowToEvent(row: Record<string, unknown>) {
     organizer_phone: String(row.organizer_phone || ''),
     status: row.status === 'closed' ? 'closed' : 'active',
   };
+}
+
+function randomCodePart(length: number) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < length; i += 1) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+
+function createEventCode(date: string, location: string, existingCodes: Set<string>) {
+  const datePart = date.replace(/-/g, '').slice(0, 8) || new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const words = location
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean);
+  const prefix = (words[0]?.[0] || 'H') + (words[1]?.[0] || words[0]?.[1] || 'B');
+
+  for (let i = 0; i < 20; i += 1) {
+    const code = `${prefix}-${datePart}-${randomCodePart(4)}`;
+    if (!existingCodes.has(code)) return code;
+  }
+  return `${prefix}-${datePart}-${Date.now().toString().slice(-4)}`;
 }
 
 export async function GET() {
@@ -72,6 +97,7 @@ export async function POST(request: Request) {
       date: String(data.date || ''),
       time: String(data.time || ''),
       location: String(data.location || ''),
+      event_code: String(data.event_code || '').trim(),
       price: String(data.price || ''),
       age_range: String(data.age_range || data.ageRange || ''),
       max_participants: Number(data.max_participants || data.maxParticipants || 20),
@@ -93,9 +119,11 @@ export async function POST(request: Request) {
         cache: 'no-store',
       });
 
+      let existingCodes = new Set<string>();
       if (listResponse.ok) {
         const rows = (await listResponse.json()) as Record<string, unknown>[];
         const events = rows.map(mapRowToEvent);
+        existingCodes = new Set(events.map((item) => String((item as { event_code?: string }).event_code || '')).filter(Boolean));
         if (isDuplicateEvent(payload, events as any)) {
           return NextResponse.json(
             { error: 'Event already exists / 活动已存在' },
@@ -104,6 +132,8 @@ export async function POST(request: Request) {
         }
       }
 
+      const eventCode = payload.event_code || createEventCode(payload.date, payload.location, existingCodes);
+
       const id = String(Date.now());
       const withNewColumns = {
         id,
@@ -111,6 +141,7 @@ export async function POST(request: Request) {
         date: payload.date,
         time: payload.time,
         location: payload.location,
+        event_code: eventCode,
         price: payload.price,
         age_range: payload.age_range,
         max_participants: payload.max_participants,
@@ -125,6 +156,7 @@ export async function POST(request: Request) {
         date: payload.date,
         time: payload.time,
         location: payload.location,
+        event_code: eventCode,
         price: payload.price,
         seats: payload.max_participants,
         organizer_name: payload.organizer_name,
@@ -137,6 +169,7 @@ export async function POST(request: Request) {
         date: payload.date,
         time: payload.time,
         location: payload.location,
+        event_code: eventCode,
         price: payload.price,
         seats: payload.max_participants,
         status: payload.status,
@@ -188,7 +221,8 @@ export async function POST(request: Request) {
       }
 
       const createdRows = (await insertResponse.json()) as Record<string, unknown>[];
-      return NextResponse.json(mapRowToEvent(createdRows[0] || withNewColumns));
+      const created = mapRowToEvent(createdRows[0] || withNewColumns);
+      return NextResponse.json(created);
     }
 
     if (isDuplicateEvent(payload, getEvents())) {
@@ -198,7 +232,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const event = saveEvent(payload);
+    const localEvents = getEvents();
+    const existingCodes = new Set(localEvents.map((item) => String((item as { event_code?: string }).event_code || '')).filter(Boolean));
+    const event = saveEvent({
+      ...payload,
+      event_code: payload.event_code || createEventCode(payload.date, payload.location, existingCodes),
+    });
     return NextResponse.json(event);
   } catch (error) {
     return NextResponse.json(

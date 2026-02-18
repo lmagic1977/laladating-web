@@ -5,6 +5,7 @@ export interface Event {
   date: string;
   time: string;
   location: string;
+  event_code: string;
   price: string;
   age_range: string;
   max_participants: number;
@@ -65,6 +66,7 @@ let serverEvents: Event[] = [
     date: '2024-02-15',
     time: '20:00',
     location: 'Huntington Beach',
+    event_code: 'HB-20240215-A1B2',
     price: '$39',
     age_range: '20-30',
     max_participants: 20,
@@ -77,6 +79,7 @@ let serverEvents: Event[] = [
     date: '2024-02-22',
     time: '20:00',
     location: 'Huntington Beach',
+    event_code: 'HB-20240222-C3D4',
     price: '$39',
     age_range: '25-35',
     max_participants: 20,

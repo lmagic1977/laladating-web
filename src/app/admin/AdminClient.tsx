@@ -9,6 +9,7 @@ interface Event {
   date: string;
   time: string;
   location: string;
+  event_code?: string;
   price: string;
   age_range: string;
   max_participants: number;
@@ -391,6 +392,7 @@ export default function AdminPage() {
                 <div>
                   <h3 className="font-semibold">{event.name}</h3>
                   <p className="text-sm text-white/60 mt-1">{event.date} · {event.time}</p>
+                  <p className="text-xs text-cyan-300 mt-1">Code: {event.event_code || '-'}</p>
                 </div>
                 <span
                   className={`text-xs px-2 py-1 rounded-full ${
