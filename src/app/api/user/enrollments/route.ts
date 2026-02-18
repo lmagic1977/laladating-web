@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { USER_AUTH_COOKIE, verifyUserSessionToken } from "@/lib/user-auth";
 import { getEvents } from "@/lib/db";
 import { chargeForEvent, refundForEvent } from "@/lib/user-finance";
+import { getLocalProfile } from "@/lib/user-profile";
 
 type Enrollment = {
   id: string;
@@ -11,6 +12,11 @@ type Enrollment = {
   payment: string;
   status: string;
   createdat: string;
+  name?: string;
+  email?: string;
+  age?: number;
+  headshot_url?: string;
+  fullshot_url?: string;
 };
 
 const localEnrollments: Enrollment[] = [];
@@ -50,6 +56,46 @@ function getEventStartTime(event: Record<string, unknown> | undefined) {
   return dt;
 }
 
+async function fetchUserProfile(userId: string): Promise<Record<string, unknown> | null> {
+  if (hasSupabase()) {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/user_profiles?user_id=eq.${encodeURIComponent(userId)}&select=*`,
+      {
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        cache: "no-store",
+      }
+    );
+    if (res.ok) {
+      const rows = (await res.json()) as Record<string, unknown>[];
+      return rows[0] || null;
+    }
+  }
+  return (getLocalProfile(userId) as Record<string, unknown> | null) || null;
+}
+
+function validateRequiredProfile(profile: Record<string, unknown> | null) {
+  if (!profile) return false;
+  const requiredFields = [
+    "age",
+    "job",
+    "interests",
+    "zodiac",
+    "height_cm",
+    "body_type",
+    "headshot_url",
+    "fullshot_url",
+  ];
+  return requiredFields.every((key) => {
+    const val = profile[key];
+    if (val === null || val === undefined) return false;
+    if (typeof val === "number") return val > 0;
+    return String(val).trim().length > 0;
+  });
+}
+
 async function fetchRemoteEnrollments(userId: string): Promise<Enrollment[]> {
   const res = await fetch(
     `${supabaseUrl}/rest/v1/registrations?attendeeid=eq.${encodeURIComponent(userId)}&select=*`,
@@ -84,6 +130,14 @@ export async function POST(request: Request) {
   const body = await request.json();
   const eventId = String(body?.eventId || "");
   if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
+
+  const profile = await fetchUserProfile(user.userId);
+  if (!validateRequiredProfile(profile)) {
+    return NextResponse.json(
+      { error: "请先完善资料并上传头像+全身照后再报名 / Complete all profile fields and upload photos first" },
+      { status: 400 }
+    );
+  }
 
   if (hasSupabase()) {
     const existing = await fetchRemoteEnrollments(user.userId);
@@ -126,6 +180,11 @@ export async function POST(request: Request) {
       payment,
       status: "paid",
       createdat: new Date().toISOString(),
+      name: String((profile?.name as string) || user.email.split("@")[0] || "User"),
+      email: user.email,
+      age: Number(profile?.age || 0),
+      headshot_url: String(profile?.headshot_url || ""),
+      fullshot_url: String(profile?.fullshot_url || ""),
     };
 
     const insertRes = await fetch(`${supabaseUrl}/rest/v1/registrations`, {
@@ -175,6 +234,11 @@ export async function POST(request: Request) {
     payment,
     status: "paid",
     createdat: new Date().toISOString(),
+    name: String((profile?.name as string) || user.email.split("@")[0] || "User"),
+    email: user.email,
+    age: Number(profile?.age || 0),
+    headshot_url: String(profile?.headshot_url || ""),
+    fullshot_url: String(profile?.fullshot_url || ""),
   };
   localEnrollments.push(enrollment);
   return NextResponse.json({ ok: true, enrollment, paymentMode: payment });

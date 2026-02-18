@@ -29,7 +29,8 @@ export async function GET(request: Request) {
 
   if (hasSupabaseConfig()) {
     try {
-      const [regRes, profileRes] = await Promise.all([
+      const canReadAuthUsers = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && supabaseUrl);
+      const [regRes, profileRes, authUsersRes] = await Promise.all([
         fetch(`${supabaseUrl}/rest/v1/registrations?select=*`, {
           headers: {
             apikey: String(supabaseKey),
@@ -44,23 +45,48 @@ export async function GET(request: Request) {
           },
           cache: 'no-store',
         }),
+        canReadAuthUsers
+          ? fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=200`, {
+              headers: {
+                apikey: String(process.env.SUPABASE_SERVICE_ROLE_KEY),
+                Authorization: `Bearer ${String(process.env.SUPABASE_SERVICE_ROLE_KEY)}`,
+              },
+              cache: 'no-store',
+            })
+          : Promise.resolve(new Response('[]', { status: 200 })),
       ]);
 
       const regRows = regRes.ok ? ((await regRes.json()) as Record<string, unknown>[]) : [];
       const profileRows = profileRes.ok ? ((await profileRes.json()) as Record<string, unknown>[]) : [];
       const profileMap = new Map(profileRows.map((p) => [String(p.user_id || ''), p]));
+      const authJson = authUsersRes.ok
+        ? ((await authUsersRes.json()) as { users?: Array<Record<string, unknown>> })
+        : { users: [] };
+      const authUsers = Array.isArray(authJson.users) ? authJson.users : [];
+      const authUserMap = new Map(authUsers.map((u) => [String(u.id || ''), u]));
 
       const mapped = regRows.map((row) => {
         const eventVal = String(row.event_id || row.eventid || row.eventId || '');
         const attendeeId = String(row.attendeeid || row.attendeeId || '');
         const profile = profileMap.get(attendeeId);
-        const email = String(row.email || profile?.email || attendeeId || '');
-        const fallbackName = email.includes('@') ? email.split('@')[0] : attendeeId || 'User';
+        const authUser = authUserMap.get(attendeeId);
+        const authEmail = String(authUser?.email || '');
+        const rowEmail = String(row.email || '');
+        const normalizedRowEmail = rowEmail.includes('@') ? rowEmail : '';
+        const email = String(normalizedRowEmail || profile?.email || authEmail || '');
+        const rawName = String(
+          row.name ||
+          (authUser?.user_metadata as { name?: string } | undefined)?.name ||
+          profile?.name ||
+          ''
+        );
+        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawName);
+        const fallbackName = email.includes('@') ? email.split('@')[0] : '未填写姓名';
 
         return {
           id: Number(row.id || Date.now()),
-          name: String(row.name || fallbackName),
-          email,
+          name: rawName && !looksLikeUuid ? rawName : fallbackName,
+          email: email || '未填写邮箱',
           phone: String(row.phone || ''),
           age: Number(row.age || profile?.age || 0),
           gender: String(row.gender || ''),

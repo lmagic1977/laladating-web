@@ -67,6 +67,31 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const requiredFields = [
+    "age",
+    "job",
+    "interests",
+    "zodiac",
+    "height_cm",
+    "body_type",
+    "headshot_url",
+    "fullshot_url",
+  ] as const;
+
+  const missing = requiredFields.filter((key) => {
+    const val = body?.[key];
+    if (val === null || val === undefined) return true;
+    if (typeof val === "number") return val <= 0;
+    return String(val).trim().length === 0;
+  });
+
+  if (missing.length > 0) {
+    return NextResponse.json(
+      { error: `Missing required profile fields: ${missing.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   const profile: UserProfile = {
     user_id: user.userId,
     email: user.email,
