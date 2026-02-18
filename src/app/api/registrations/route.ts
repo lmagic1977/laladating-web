@@ -23,8 +23,17 @@ function hasSupabaseConfig() {
   return Boolean(supabaseUrl && supabaseKey);
 }
 
-function dedupeByUserAndEvent(rows: Record<string, unknown>[]) {
-  const map = new Map<string, Record<string, unknown>>();
+function dedupeByUserAndEvent<T extends {
+  event_id?: unknown;
+  eventid?: unknown;
+  eventId?: unknown;
+  attendeeid?: unknown;
+  attendeeId?: unknown;
+  email?: unknown;
+  created_at?: unknown;
+  createdat?: unknown;
+}>(rows: T[]) {
+  const map = new Map<string, T>();
   for (const row of rows) {
     const eventId = String(row.event_id || row.eventid || row.eventId || '');
     const attendeeId = String(row.attendeeid || row.attendeeId || row.email || '');
@@ -132,7 +141,7 @@ export async function GET(request: Request) {
   }
 
   const local = getRegistrations();
-  const dedupedLocal = dedupeByUserAndEvent(local as unknown as Record<string, unknown>[]) as typeof local;
+  const dedupedLocal = dedupeByUserAndEvent(local);
   const filtered = eventId
     ? dedupedLocal.filter((r) => String(r.event_id) === String(eventId))
     : dedupedLocal;
