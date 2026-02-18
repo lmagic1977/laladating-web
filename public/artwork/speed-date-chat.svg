@@ -1,0 +1,32 @@
+<svg width="900" height="600" viewBox="0 0 900 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="900" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#131833"/>
+      <stop offset="1" stop-color="#121226"/>
+    </linearGradient>
+    <linearGradient id="p2" x1="130" y1="90" x2="410" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF4FA1"/>
+      <stop offset="1" stop-color="#FF7BBB"/>
+    </linearGradient>
+    <linearGradient id="c2" x1="516" y1="102" x2="790" y2="462" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EE8FF"/>
+      <stop offset="1" stop-color="#6CB0FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="600" rx="22" fill="url(#bg2)"/>
+  <rect x="58" y="74" width="784" height="452" rx="22" fill="#171E3E" stroke="#3A4A95"/>
+  <circle cx="251" cy="189" r="42" fill="url(#p2)"/>
+  <path d="M186 331C186 294 216 264 253 264C290 264 320 294 320 331V378H186V331Z" fill="url(#p2)"/>
+
+  <circle cx="650" cy="189" r="42" fill="url(#c2)"/>
+  <path d="M585 331C585 294 615 264 652 264C689 264 719 294 719 331V378H585V331Z" fill="url(#c2)"/>
+
+  <rect x="324" y="146" width="252" height="84" rx="18" fill="#252F62"/>
+  <rect x="345" y="170" width="210" height="10" rx="5" fill="#8CE9FF"/>
+  <rect x="345" y="192" width="135" height="10" rx="5" fill="#8CE9FF"/>
+
+  <rect x="276" y="410" width="348" height="78" rx="16" fill="#23294E"/>
+  <rect x="305" y="436" width="290" height="9" rx="4.5" fill="#FF8EC9"/>
+  <text x="450" y="556" fill="#FAFDFF" font-family="Arial, sans-serif" font-size="34" font-weight="700" text-anchor="middle">5-MINUTE CHAT ROUNDS</text>
+</svg>

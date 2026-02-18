@@ -21,9 +21,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <a href="/" className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-full bg-gradient-to-r from-pink-500 to-cyan-400 flex items-center justify-center text-2xl font-bold text-white">
-              💕
-            </div>
+            <img
+              src="/logo-lala-speed.svg"
+              alt="LALA Speed Dating"
+              className="h-12 w-auto md:h-14"
+            />
           </a>
           <nav className="hidden md:flex flex-1 max-w-2xl mx-8 items-center justify-between text-base font-semibold text-white/80">
             <a href="/" className="flex-1 text-center hover:text-white">{t('nav.home')}</a>

@@ -188,6 +188,20 @@ export default function AdminPage() {
     window.location.href = "/admin/login";
   };
 
+  const handleCopyEventCode = async (code?: string) => {
+    const value = String(code || '').trim();
+    if (!value) {
+      alert('该活动暂无代码');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      alert(`已复制活动代码: ${value}`);
+    } catch {
+      alert('复制失败，请手动复制');
+    }
+  };
+
   const handleResetPassword = async (member: Member) => {
     const newPassword = String(resetPasswords[member.id] || '').trim();
     if (!newPassword || newPassword.length < 6) {
@@ -405,6 +419,12 @@ export default function AdminPage() {
                 </span>
               </div>
               <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => handleCopyEventCode(event.event_code)}
+                  className="flex-1 rounded-lg border border-cyan-500/30 px-3 py-2 text-sm text-cyan-200 hover:bg-cyan-500/10 transition-colors"
+                >
+                  复制代码
+                </button>
                 <button
                   onClick={() =>
                     setActiveEventId((prev) =>

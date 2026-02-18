@@ -1,0 +1,24 @@
+<svg width="620" height="220" viewBox="0 0 620 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heartGrad" x1="98" y1="18" x2="188" y2="144" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF3E8C"/>
+      <stop offset="1" stop-color="#FF6CAB"/>
+    </linearGradient>
+    <linearGradient id="wingGrad" x1="170" y1="35" x2="270" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55E5FF"/>
+      <stop offset="1" stop-color="#4BA2FF"/>
+    </linearGradient>
+    <filter id="logoGlow" x="0" y="0" width="620" height="220" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feBlend in="SourceGraphic" in2="blur" mode="normal"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#logoGlow)">
+    <path d="M141 143L76 83C58 64 58 35 76 18C93 1 121 1 138 18L145 25L152 18C169 1 197 1 214 18C232 35 232 64 214 83L149 143C147 145 143 145 141 143Z" fill="url(#heartGrad)"/>
+    <path d="M196 44L275 12L227 61L300 45L233 84L283 86L211 108" stroke="url(#wingGrad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <text x="328" y="92" fill="#FF6CAB" font-family="Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="2">LALA</text>
+    <text x="328" y="144" fill="#59DFFF" font-family="Arial, sans-serif" font-size="44" font-weight="700" letter-spacing="1.5">SPEED DATING</text>
+  </g>
+</svg>

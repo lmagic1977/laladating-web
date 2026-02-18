@@ -1,0 +1,42 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101325"/>
+      <stop offset="0.55" stop-color="#192248"/>
+      <stop offset="1" stop-color="#101525"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="212" y1="97" x2="954" y2="665" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF4FA1"/>
+      <stop offset="1" stop-color="#FF8EC9"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="386" y1="166" x2="888" y2="695" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#59E3FF"/>
+      <stop offset="1" stop-color="#7DB6FF"/>
+    </linearGradient>
+    <filter id="glow" x="140" y="20" width="920" height="760" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feBlend in="SourceGraphic" in2="blur"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="800" rx="28" fill="url(#bg)"/>
+  <circle cx="956" cy="145" r="110" fill="#2A3470" opacity="0.5"/>
+  <circle cx="226" cy="690" r="140" fill="#2D295A" opacity="0.6"/>
+
+  <g filter="url(#glow)">
+    <rect x="220" y="150" width="760" height="500" rx="28" fill="#0E132C" stroke="#FF4FA1" stroke-opacity="0.45"/>
+    <path d="M422 418C422 351 476 297 543 297H657C724 297 778 351 778 418V419C778 486 724 540 657 540H543C476 540 422 486 422 419V418Z" fill="#1D264E"/>
+    <path d="M500 386H700" stroke="#5AE4FF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M500 427H700" stroke="#5AE4FF" stroke-width="8" stroke-linecap="round"/>
+    <path d="M500 468H620" stroke="#5AE4FF" stroke-width="8" stroke-linecap="round"/>
+
+    <path d="M379 471C379 428 413 394 456 394V394C498 394 533 428 533 471V557H379V471Z" fill="url(#pink)"/>
+    <circle cx="456" cy="341" r="48" fill="url(#pink)"/>
+
+    <path d="M667 471C667 428 702 394 744 394V394C787 394 821 428 821 471V557H667V471Z" fill="url(#cyan)"/>
+    <circle cx="744" cy="341" r="48" fill="url(#cyan)"/>
+
+    <path d="M592 266C612 234 660 234 680 266L695 291C699 297 705 301 712 302L742 307C779 313 793 359 766 383L744 403C739 408 736 415 737 422L742 452C747 489 709 517 676 500L649 486C643 483 636 483 630 486L603 500C570 517 532 489 537 452L542 422C543 415 540 408 535 403L513 383C486 359 500 313 537 307L567 302C574 301 580 297 584 291L592 266Z" fill="#FF5CAD"/>
+    <text x="600" y="625" fill="#F8FAFF" font-family="Arial, sans-serif" font-size="42" font-weight="700" text-anchor="middle">LALA SPEED DATING</text>
+  </g>
+</svg>
