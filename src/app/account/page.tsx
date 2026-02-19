@@ -59,6 +59,16 @@ type ProfileForm = {
   photos: string[];
 };
 
+type RequiredProfileField =
+  | "age"
+  | "job"
+  | "interests"
+  | "zodiac"
+  | "height_cm"
+  | "body_type"
+  | "headshot_url"
+  | "fullshot_url";
+
 export default function AccountPage() {
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("");
@@ -83,6 +93,7 @@ export default function AccountPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileFieldErrors, setProfileFieldErrors] = useState<Partial<Record<RequiredProfileField, string>>>({});
 
   const isFreePrice = (price: string) => {
     const v = String(price || "").trim().toLowerCase();
@@ -243,6 +254,13 @@ export default function AccountPage() {
     const missing = Object.entries(fieldLabels)
       .filter(([key]) => !String((profile as unknown as Record<string, unknown>)[key] ?? "").trim())
       .map(([, label]) => label);
+    const nextFieldErrors: Partial<Record<RequiredProfileField, string>> = {};
+    (Object.keys(fieldLabels) as RequiredProfileField[]).forEach((key) => {
+      if (!String((profile as unknown as Record<string, unknown>)[key] ?? "").trim()) {
+        nextFieldErrors[key] = `${fieldLabels[key]} 必填`;
+      }
+    });
+    setProfileFieldErrors(nextFieldErrors);
 
     if (missing.length) {
       setProfileError(`请先填写完整资料: ${missing.join("、")} / Missing required fields: ${missing.join(", ")}`);
@@ -265,17 +283,31 @@ export default function AccountPage() {
             .split(",")
             .map((s: string) => s.trim());
           const labels = keys.map((k: string) => fieldLabels[k] || k);
+          const apiFieldErrors: Partial<Record<RequiredProfileField, string>> = {};
+          keys.forEach((k: string) => {
+            const key = k as RequiredProfileField;
+            if (fieldLabels[key]) apiFieldErrors[key] = `${fieldLabels[key]} 必填`;
+          });
+          setProfileFieldErrors(apiFieldErrors);
           setProfileError(`资料不完整，请补充: ${labels.join("、")} / Please complete: ${labels.join(", ")}`);
         } else {
           setProfileError(`${raw}。请稍后重试，或联系管理员。 / Please try again or contact admin.`);
         }
         return;
       }
+      setProfileFieldErrors({});
       setProfileSuccess("个人资料已保存 / Profile saved");
     } finally {
       setSavingProfile(false);
     }
   };
+
+  const getInputClass = (field: RequiredProfileField) =>
+    `rounded-lg border bg-white/10 px-3 py-2 ${
+      profileFieldErrors[field]
+        ? "border-red-400/70 ring-1 ring-red-400/50"
+        : "border-white/20"
+    }`;
 
   if (!ready) {
     return <div className="text-white/70">Loading...</div>;
@@ -313,22 +345,106 @@ export default function AccountPage() {
           </div>
         ) : null}
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <input value={profile.age} onChange={(e) => setProfile({ ...profile, age: e.target.value })} placeholder="年龄 Age" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
-          <input value={profile.job} onChange={(e) => setProfile({ ...profile, job: e.target.value })} placeholder="工作 Job" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
-          <input value={profile.interests} onChange={(e) => setProfile({ ...profile, interests: e.target.value })} placeholder="兴趣爱好 Interests" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
-          <input value={profile.zodiac} onChange={(e) => setProfile({ ...profile, zodiac: e.target.value })} placeholder="星座 Zodiac" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
-          <input value={profile.height_cm} onChange={(e) => setProfile({ ...profile, height_cm: e.target.value })} placeholder="身高(cm) Height" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
-          <input value={profile.body_type} onChange={(e) => setProfile({ ...profile, body_type: e.target.value })} placeholder="身材类型 Body Type" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
+          <div>
+            <input
+              value={profile.age}
+              onChange={(e) => {
+                setProfile({ ...profile, age: e.target.value });
+                setProfileFieldErrors((prev) => ({ ...prev, age: undefined }));
+              }}
+              placeholder="年龄 Age"
+              className={getInputClass("age")}
+            />
+            {profileFieldErrors.age ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.age}</p> : null}
+          </div>
+          <div>
+            <input
+              value={profile.job}
+              onChange={(e) => {
+                setProfile({ ...profile, job: e.target.value });
+                setProfileFieldErrors((prev) => ({ ...prev, job: undefined }));
+              }}
+              placeholder="工作 Job"
+              className={getInputClass("job")}
+            />
+            {profileFieldErrors.job ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.job}</p> : null}
+          </div>
+          <div>
+            <input
+              value={profile.interests}
+              onChange={(e) => {
+                setProfile({ ...profile, interests: e.target.value });
+                setProfileFieldErrors((prev) => ({ ...prev, interests: undefined }));
+              }}
+              placeholder="兴趣爱好 Interests"
+              className={getInputClass("interests")}
+            />
+            {profileFieldErrors.interests ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.interests}</p> : null}
+          </div>
+          <div>
+            <input
+              value={profile.zodiac}
+              onChange={(e) => {
+                setProfile({ ...profile, zodiac: e.target.value });
+                setProfileFieldErrors((prev) => ({ ...prev, zodiac: undefined }));
+              }}
+              placeholder="星座 Zodiac"
+              className={getInputClass("zodiac")}
+            />
+            {profileFieldErrors.zodiac ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.zodiac}</p> : null}
+          </div>
+          <div>
+            <input
+              value={profile.height_cm}
+              onChange={(e) => {
+                setProfile({ ...profile, height_cm: e.target.value });
+                setProfileFieldErrors((prev) => ({ ...prev, height_cm: undefined }));
+              }}
+              placeholder="身高(cm) Height"
+              className={getInputClass("height_cm")}
+            />
+            {profileFieldErrors.height_cm ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.height_cm}</p> : null}
+          </div>
+          <div>
+            <input
+              value={profile.body_type}
+              onChange={(e) => {
+                setProfile({ ...profile, body_type: e.target.value });
+                setProfileFieldErrors((prev) => ({ ...prev, body_type: undefined }));
+              }}
+              placeholder="身材类型 Body Type"
+              className={getInputClass("body_type")}
+            />
+            {profileFieldErrors.body_type ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.body_type}</p> : null}
+          </div>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>
             <p className="mb-2 text-sm text-white/70">头像照片</p>
-            <input type="file" accept="image/*" onChange={onUploadSingle("headshot_url")} className="text-sm" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                await onUploadSingle("headshot_url")(e);
+                setProfileFieldErrors((prev) => ({ ...prev, headshot_url: undefined }));
+              }}
+              className={`text-sm ${profileFieldErrors.headshot_url ? "text-red-300" : ""}`}
+            />
+            {profileFieldErrors.headshot_url ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.headshot_url}</p> : null}
             {profile.headshot_url ? <img src={profile.headshot_url} alt="headshot" className="mt-2 h-16 w-16 rounded-full object-cover" /> : null}
           </div>
           <div>
             <p className="mb-2 text-sm text-white/70">全身照片</p>
-            <input type="file" accept="image/*" onChange={onUploadSingle("fullshot_url")} className="text-sm" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                await onUploadSingle("fullshot_url")(e);
+                setProfileFieldErrors((prev) => ({ ...prev, fullshot_url: undefined }));
+              }}
+              className={`text-sm ${profileFieldErrors.fullshot_url ? "text-red-300" : ""}`}
+            />
+            {profileFieldErrors.fullshot_url ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.fullshot_url}</p> : null}
             {profile.fullshot_url ? <img src={profile.fullshot_url} alt="fullshot" className="mt-2 h-20 w-16 rounded object-cover" /> : null}
           </div>
           <div>
