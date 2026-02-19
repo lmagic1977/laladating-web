@@ -81,6 +81,8 @@ export default function AccountPage() {
     photos: [],
   });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
 
   const isFreePrice = (price: string) => {
     const v = String(price || "").trim().toLowerCase();
@@ -224,6 +226,29 @@ export default function AccountPage() {
 
   const onSaveProfile = async () => {
     setError("");
+    setProfileError("");
+    setProfileSuccess("");
+
+    const fieldLabels: Record<string, string> = {
+      age: "年龄 Age",
+      job: "工作 Job",
+      interests: "兴趣爱好 Interests",
+      zodiac: "星座 Zodiac",
+      height_cm: "身高 Height",
+      body_type: "身材类型 Body Type",
+      headshot_url: "头像照片 Headshot",
+      fullshot_url: "全身照片 Full Body Photo",
+    };
+
+    const missing = Object.entries(fieldLabels)
+      .filter(([key]) => !String((profile as unknown as Record<string, unknown>)[key] ?? "").trim())
+      .map(([, label]) => label);
+
+    if (missing.length) {
+      setProfileError(`请先填写完整资料: ${missing.join("、")} / Missing required fields: ${missing.join(", ")}`);
+      return;
+    }
+
     setSavingProfile(true);
     try {
       const res = await fetch("/api/user/profile", {
@@ -231,12 +256,22 @@ export default function AccountPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profile),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok) {
-        setError(data?.error || "Save profile failed");
+        const raw = typeof data?.error === "string" ? data.error : "Save profile failed";
+        if (raw.includes("Missing required profile fields:")) {
+          const keys = raw
+            .replace("Missing required profile fields:", "")
+            .split(",")
+            .map((s: string) => s.trim());
+          const labels = keys.map((k: string) => fieldLabels[k] || k);
+          setProfileError(`资料不完整，请补充: ${labels.join("、")} / Please complete: ${labels.join(", ")}`);
+        } else {
+          setProfileError(`${raw}。请稍后重试，或联系管理员。 / Please try again or contact admin.`);
+        }
         return;
       }
-      alert("个人资料已保存 / Profile saved");
+      setProfileSuccess("个人资料已保存 / Profile saved");
     } finally {
       setSavingProfile(false);
     }
@@ -267,6 +302,16 @@ export default function AccountPage() {
 
       <div className="neon-card p-5">
         <h2 className="text-lg font-semibold">Profile / 个人信息</h2>
+        {profileError ? (
+          <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
+            {profileError}
+          </div>
+        ) : null}
+        {profileSuccess ? (
+          <div className="mt-3 rounded-lg border border-green-500/40 bg-green-500/15 px-3 py-2 text-sm text-green-200">
+            {profileSuccess}
+          </div>
+        ) : null}
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <input value={profile.age} onChange={(e) => setProfile({ ...profile, age: e.target.value })} placeholder="年龄 Age" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />
           <input value={profile.job} onChange={(e) => setProfile({ ...profile, job: e.target.value })} placeholder="工作 Job" className="rounded-lg border border-white/20 bg-white/10 px-3 py-2" />

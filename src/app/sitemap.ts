@@ -19,22 +19,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
-      url: `${siteUrl}/auth`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
       url: `${siteUrl}/onsite`,
       lastModified: now,
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.6,
     },
     {
-      url: `${siteUrl}/account`,
+      url: `${siteUrl}/contact`,
       lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.6,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${siteUrl}/privacy`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${siteUrl}/terms`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${siteUrl}/sitemap`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.4,
     },
   ];
 }

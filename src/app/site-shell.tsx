@@ -54,8 +54,33 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
-      <footer className="mx-auto w-full max-w-6xl px-6 pb-10 text-sm text-white/60">
-        LALA Speed Dating · Huntington Beach, CA
+      <footer className="mx-auto w-full max-w-6xl px-6 pb-10 text-sm text-white/70">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="grid gap-5 md:grid-cols-3">
+            <div>
+              <p className="font-semibold text-white">LALA Speed Dating</p>
+              <p className="mt-2 text-white/60">Huntington Beach, CA</p>
+            </div>
+            <div>
+              <p className="font-semibold text-white">网站信息 / Site Links</p>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                <a href="/sitemap" className="hover:text-pink-300">网站地图 Sitemap</a>
+                <a href="/contact" className="hover:text-pink-300">联系我们 Contact</a>
+                <a href="/privacy" className="hover:text-pink-300">隐私政策 Privacy</a>
+                <a href="/terms" className="hover:text-pink-300">服务条款 Terms</a>
+              </div>
+            </div>
+            <div>
+              <p className="font-semibold text-white">联系我们 / Contact</p>
+              <div className="mt-2 space-y-1 text-white/70">
+                <p>创始人/CEO: 羊驼哥</p>
+                <p>电话: <a href="tel:+16269752527" className="hover:text-pink-300">626-975-2527</a></p>
+                <p>微信: RUNMUNT</p>
+                <p>WhatsApp: <a href="https://wa.me/18624383400" target="_blank" rel="noreferrer" className="hover:text-pink-300">+1 862 438 3400</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );
