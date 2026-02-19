@@ -109,7 +109,11 @@ export default function HomePage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           {activeEvents.slice(0, 3).map((event) => (
-            <div key={event.id} className="neon-card p-5">
+            <a
+              key={event.id}
+              href={`/events/${event.id}`}
+              className="neon-card block p-5 transition hover:-translate-y-0.5"
+            >
               <div className="text-xs uppercase tracking-wide text-cyan-300">{t('events.open')}</div>
               <h3 className="mt-3 text-lg font-semibold text-white">{event.name}</h3>
               <p className="mt-1 text-sm text-white/60">{event.location}</p>
@@ -119,10 +123,16 @@ export default function HomePage() {
                 </span>
                 <span className="text-pink-300">{event.price}</span>
               </div>
-            </div>
+              <p className="mt-3 text-xs text-cyan-300">查看详情与报名名单 / View details</p>
+            </a>
           ))}
           {!activeEvents.length && <div className="text-white/60">{t('common.loading')}</div>}
         </div>
+        {activeEvents.length > 0 ? (
+          <p className="mt-3 text-xs text-white/50">
+            需登录后查看活动报名人员信息 / Login required for participant list.
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
