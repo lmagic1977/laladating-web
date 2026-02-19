@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getRegistrations, isDuplicateRegistration, saveRegistration } from '@/lib/db';
 import { USER_AUTH_COOKIE, verifyUserSessionToken } from '@/lib/user-auth';
+import { ADMIN_AUTH_COOKIE, getAdminSessionValue } from '@/lib/admin-auth';
 
 function normalizeSupabaseUrl(url?: string) {
   if (!url) return '';
@@ -54,6 +55,15 @@ function dedupeByUserAndEvent<T extends {
 }
 
 export async function GET(request: Request) {
+  const userToken = cookies().get(USER_AUTH_COOKIE)?.value;
+  const userSession = verifyUserSessionToken(userToken);
+  const adminSession = cookies().get(ADMIN_AUTH_COOKIE)?.value;
+  const isAdmin = Boolean(adminSession && adminSession === getAdminSessionValue());
+
+  if (!userSession && !isAdmin) {
+    return NextResponse.json({ error: 'Please login first / 请先登录' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get('event_id');
 
@@ -131,9 +141,17 @@ export async function GET(request: Request) {
         };
       });
 
+      const roleFiltered = isAdmin
+        ? mapped
+        : mapped.filter(
+            (r) =>
+              String((r as { email?: unknown }).email || '').toLowerCase() ===
+                String(userSession?.email || '').toLowerCase()
+          );
+
       const filtered = eventId
-        ? mapped.filter((r) => String(r.event_id) === String(eventId))
-        : mapped;
+        ? roleFiltered.filter((r) => String(r.event_id) === String(eventId))
+        : roleFiltered;
       return NextResponse.json(filtered);
     } catch {
       // fall through to local fallback
@@ -142,9 +160,18 @@ export async function GET(request: Request) {
 
   const local = getRegistrations();
   const dedupedLocal = dedupeByUserAndEvent(local);
+  const roleFiltered = isAdmin
+    ? dedupedLocal
+    : dedupedLocal.filter(
+        (r) =>
+          String((r as { attendeeid?: unknown }).attendeeid || '').toLowerCase() ===
+            String(userSession?.userId || '').toLowerCase() ||
+          String((r as { email?: unknown }).email || '').toLowerCase() ===
+            String(userSession?.email || '').toLowerCase()
+      );
   const filtered = eventId
-    ? dedupedLocal.filter((r) => String(r.event_id) === String(eventId))
-    : dedupedLocal;
+    ? roleFiltered.filter((r) => String(r.event_id) === String(eventId))
+    : roleFiltered;
   return NextResponse.json(filtered);
 }
 
