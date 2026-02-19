@@ -94,6 +94,12 @@ export default function AccountPage() {
   const [profileError, setProfileError] = useState("");
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileFieldErrors, setProfileFieldErrors] = useState<Partial<Record<RequiredProfileField, string>>>({});
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const isFreePrice = (price: string) => {
     const v = String(price || "").trim().toLowerCase();
@@ -302,6 +308,44 @@ export default function AccountPage() {
     }
   };
 
+  const onChangePassword = async () => {
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("请填写完整密码信息 / Please fill all password fields");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("新密码至少 6 位 / New password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("两次输入的新密码不一致 / New passwords do not match");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/user/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (!res.ok) {
+        setPasswordError(String(data?.error || "修改密码失败 / Failed to change password"));
+        return;
+      }
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordSuccess("密码修改成功 / Password changed");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const getInputClass = (field: RequiredProfileField) =>
     `rounded-lg border bg-white/10 px-3 py-2 ${
       profileFieldErrors[field]
@@ -463,6 +507,50 @@ export default function AccountPage() {
           className="mt-4 rounded-full px-4 py-2 text-xs font-semibold neon-button disabled:opacity-60"
         >
           {savingProfile ? "Saving..." : "保存资料 / Save Profile"}
+        </button>
+      </div>
+
+      <div className="neon-card p-5">
+        <h2 className="text-lg font-semibold">Password / 修改密码</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="当前密码 Current Password"
+            className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
+          />
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="新密码 New Password"
+            className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="确认新密码 Confirm Password"
+            className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
+          />
+        </div>
+        {passwordError ? (
+          <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
+            {passwordError}
+          </div>
+        ) : null}
+        {passwordSuccess ? (
+          <div className="mt-3 rounded-lg border border-green-500/40 bg-green-500/15 px-3 py-2 text-sm text-green-200">
+            {passwordSuccess}
+          </div>
+        ) : null}
+        <button
+          onClick={onChangePassword}
+          disabled={changingPassword}
+          className="mt-4 rounded-full px-4 py-2 text-xs font-semibold neon-button disabled:opacity-60"
+        >
+          {changingPassword ? "Saving..." : "修改密码 / Change Password"}
         </button>
       </div>
 
