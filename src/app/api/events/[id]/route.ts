@@ -97,7 +97,7 @@ async function patchRemoteEvent(id: string, patch: Record<string, unknown>) {
 
 async function fetchRemoteEventById(id: string) {
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(id)}&select=id,status,event_code,code&limit=1`,
+    `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(id)}&select=*&limit=1`,
     {
       headers: {
         apikey: String(supabaseReadKey),
@@ -113,8 +113,8 @@ async function fetchRemoteEventById(id: string) {
 
 async function fetchRemoteEventByCode(eventCode: string) {
   const urls = [
-    `${supabaseUrl}/rest/v1/events?event_code=eq.${encodeURIComponent(eventCode)}&select=id,status,event_code,code&limit=1`,
-    `${supabaseUrl}/rest/v1/events?code=eq.${encodeURIComponent(eventCode)}&select=id,status,event_code,code&limit=1`,
+    `${supabaseUrl}/rest/v1/events?event_code=eq.${encodeURIComponent(eventCode)}&select=*&limit=1`,
+    `${supabaseUrl}/rest/v1/events?code=eq.${encodeURIComponent(eventCode)}&select=*&limit=1`,
   ];
   for (const url of urls) {
     const response = await fetch(url, {

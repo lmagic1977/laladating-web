@@ -65,16 +65,13 @@ function createEventCode(date: string, location: string, existingCodes: Set<stri
 export async function GET() {
   try {
     if (hasSupabaseConfig()) {
-      const response = await fetch(
-        `${supabaseUrl}/rest/v1/events?select=id,name,title,date,time,location,event_code,code,price,age_range,max_participants,seats,organizer_name,organizer_phone,status&order=date.asc,time.asc`,
-        {
+      const response = await fetch(`${supabaseUrl}/rest/v1/events?select=*&order=date.asc,time.asc`, {
         headers: {
           apikey: String(supabaseKey),
           Authorization: `Bearer ${String(supabaseKey)}`,
         },
-          cache: 'no-store',
-        }
-      );
+        cache: 'no-store',
+      });
 
       if (response.ok) {
         const rows = (await response.json()) as Record<string, unknown>[];
@@ -177,6 +174,16 @@ export async function POST(request: Request) {
         seats: payload.max_participants,
         status: payload.status,
       };
+      const withVeryLegacyColumns = {
+        id,
+        title: payload.name,
+        date: payload.date,
+        time: payload.time,
+        location: payload.location,
+        price: payload.price,
+        seats: payload.max_participants,
+        status: payload.status,
+      };
 
       let insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
         method: 'POST',
@@ -212,6 +219,19 @@ export async function POST(request: Request) {
             Prefer: 'return=representation',
           },
           body: JSON.stringify(withLegacyColumnsNoOrganizer),
+        });
+      }
+
+      if (!insertResponse.ok) {
+        insertResponse = await fetch(`${supabaseUrl}/rest/v1/events`, {
+          method: 'POST',
+          headers: {
+            apikey: String(supabaseKey),
+            Authorization: `Bearer ${String(supabaseKey)}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify(withVeryLegacyColumns),
         });
       }
 
