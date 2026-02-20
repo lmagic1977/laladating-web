@@ -111,6 +111,39 @@ async function fetchRemoteEventById(id: string) {
   return rows[0] || null;
 }
 
+async function fetchRemoteEventByCode(eventCode: string) {
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/events?event_code=eq.${encodeURIComponent(eventCode)}&select=id,status,event_code,code&limit=1`,
+    {
+      headers: {
+        apikey: String(supabaseReadKey),
+        Authorization: `Bearer ${String(supabaseReadKey)}`,
+      },
+      cache: "no-store",
+    }
+  );
+  if (!response.ok) return null;
+  const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
+  return rows[0] || null;
+}
+
+async function patchRemoteEventByCode(eventCode: string, patch: Record<string, unknown>) {
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/events?event_code=eq.${encodeURIComponent(eventCode)}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: String(supabaseWriteKey),
+        Authorization: `Bearer ${String(supabaseWriteKey)}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(patch),
+    }
+  );
+  return response.ok;
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } | Promise<{ id: string }> }
@@ -158,6 +191,7 @@ export async function PATCH(
   }
 
   const nextStatus = body?.status === "active" ? "active" : body?.status === "closed" ? "closed" : "";
+  const eventCode = String(body?.event_code || "").trim();
   if (!nextStatus) {
     return NextResponse.json({ error: "status must be active or closed" }, { status: 400 });
   }
@@ -172,13 +206,27 @@ export async function PATCH(
     const updated = await patchRemoteEvent(String(id), { status: nextStatus });
     if (!updated.ok) return NextResponse.json({ error: "更新失败：未匹配到活动记录，请检查活动ID" }, { status: 500 });
     const current = await fetchRemoteEventById(String(id));
-    if (!current || String(current.status || "") !== nextStatus) {
+    if (current && String(current.status || "") === nextStatus) {
+      return NextResponse.json({ success: true, status: nextStatus });
+    }
+
+    // Fallback: some environments may display a non-id value in UI; try event_code.
+    if (eventCode) {
+      const patchedByCode = await patchRemoteEventByCode(eventCode, { status: nextStatus });
+      if (patchedByCode) {
+        const byCode = await fetchRemoteEventByCode(eventCode);
+        if (byCode && String(byCode.status || "") === nextStatus) {
+          return NextResponse.json({ success: true, status: nextStatus });
+        }
+      }
+    }
+
+    {
       return NextResponse.json(
         { error: "状态未成功写入数据库，请检查 events 表的 status 字段和类型" },
         { status: 500 }
       );
     }
-    return NextResponse.json({ success: true, status: nextStatus });
   }
 
   const eventId = Number(id);
