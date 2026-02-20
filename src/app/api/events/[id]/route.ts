@@ -144,6 +144,39 @@ async function patchRemoteEventByCode(eventCode: string, patch: Record<string, u
   return response.ok;
 }
 
+async function patchRemoteEventByNameDateTime(
+  name: string,
+  date: string,
+  time: string,
+  patch: Record<string, unknown>
+) {
+  const queries = [
+    `${supabaseUrl}/rest/v1/events?name=eq.${encodeURIComponent(name)}&date=eq.${encodeURIComponent(
+      date
+    )}&time=eq.${encodeURIComponent(time)}`,
+    `${supabaseUrl}/rest/v1/events?title=eq.${encodeURIComponent(name)}&date=eq.${encodeURIComponent(
+      date
+    )}&time=eq.${encodeURIComponent(time)}`,
+  ];
+  for (const url of queries) {
+    const response = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        apikey: String(supabaseWriteKey),
+        Authorization: `Bearer ${String(supabaseWriteKey)}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(patch),
+    });
+    if (response.ok) {
+      const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
+      if (rows.length > 0) return true;
+    }
+  }
+  return false;
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } | Promise<{ id: string }> }
@@ -192,6 +225,9 @@ export async function PATCH(
 
   const nextStatus = body?.status === "active" ? "active" : body?.status === "closed" ? "closed" : "";
   const eventCode = String(body?.event_code || "").trim();
+  const eventName = String(body?.name || "").trim();
+  const eventDate = String(body?.date || "").trim();
+  const eventTime = String(body?.time || "").trim();
   if (!nextStatus) {
     return NextResponse.json({ error: "status must be active or closed" }, { status: 400 });
   }
@@ -218,6 +254,15 @@ export async function PATCH(
         if (byCode && String(byCode.status || "") === nextStatus) {
           return NextResponse.json({ success: true, status: nextStatus });
         }
+      }
+    }
+
+    if (eventName && eventDate && eventTime) {
+      const patchedByName = await patchRemoteEventByNameDateTime(eventName, eventDate, eventTime, {
+        status: nextStatus,
+      });
+      if (patchedByName) {
+        return NextResponse.json({ success: true, status: nextStatus });
       }
     }
 

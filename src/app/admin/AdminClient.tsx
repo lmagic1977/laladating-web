@@ -202,7 +202,13 @@ export default function AdminPage() {
     const response = await fetch(`/api/events/${event.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next, event_code: event.event_code || '' }),
+      body: JSON.stringify({
+        status: next,
+        event_code: event.event_code || '',
+        name: event.name,
+        date: event.date,
+        time: event.time,
+      }),
     });
     if (!response.ok) {
       const text = await response.text();
