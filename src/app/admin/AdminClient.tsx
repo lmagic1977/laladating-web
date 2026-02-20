@@ -146,8 +146,10 @@ export default function AdminPage() {
     setShowCreateForm(false);
   };
 
-  const handleCreateOrUpdateEvent = async (e: React.FormEvent) => {
+  const handleCreateOrUpdateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const statusFromButton = submitter?.dataset?.status === 'closed' ? 'closed' : 'active';
     const payload = {
       name: newEvent.name,
       date: newEvent.date,
@@ -158,7 +160,7 @@ export default function AdminPage() {
       organizerName: newEvent.organizerName,
       organizerPhone: newEvent.organizerPhone,
       maxParticipants: newEvent.maxParticipants,
-      status: 'active',
+      status: statusFromButton,
     };
 
     const endpoint = editingEventId ? `/api/events/${editingEventId}` : '/api/events';
@@ -436,8 +438,19 @@ export default function AdminPage() {
                 <Input label="组织人电话" value={newEvent.organizerPhone} onChange={(v) => setNewEvent({ ...newEvent, organizerPhone: v })} />
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="rounded-full px-5 py-2 text-sm font-semibold neon-button">
-                  {editingEventId ? '保存编辑' : '创建活动'}
+                <button
+                  type="submit"
+                  data-status="active"
+                  className="rounded-full px-5 py-2 text-sm font-semibold neon-button"
+                >
+                  {editingEventId ? '保存并上架' : '创建并上架'}
+                </button>
+                <button
+                  type="submit"
+                  data-status="closed"
+                  className="rounded-full border border-yellow-500/40 px-4 py-2 text-sm text-yellow-300 hover:bg-yellow-500/10"
+                >
+                  保存为下架
                 </button>
                 <button type="button" onClick={resetForm} className="rounded-full border border-white/20 px-4 py-2 text-sm hover:bg-white/10">
                   取消
