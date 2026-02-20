@@ -10,13 +10,18 @@ function normalizeSupabaseUrl(url?: string) {
 }
 
 const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
-const supabaseKey =
+const supabaseReadKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseWriteKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 function hasSupabaseConfig() {
-  return Boolean(supabaseUrl && supabaseKey);
+  return Boolean(supabaseUrl && supabaseReadKey);
+}
+
+function hasSupabaseWriteConfig() {
+  return Boolean(supabaseUrl && supabaseWriteKey);
 }
 
 function randomCodePart(length: number) {
@@ -72,8 +77,8 @@ async function patchRemoteEvent(id: string, patch: Record<string, unknown>) {
     const response = await fetch(`${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: {
-        apikey: String(supabaseKey),
-        Authorization: `Bearer ${String(supabaseKey)}`,
+        apikey: String(supabaseWriteKey),
+        Authorization: `Bearer ${String(supabaseWriteKey)}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
       },
@@ -95,8 +100,8 @@ async function fetchRemoteEventById(id: string) {
     `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(id)}&select=id,status,event_code,code&limit=1`,
     {
       headers: {
-        apikey: String(supabaseKey),
-        Authorization: `Bearer ${String(supabaseKey)}`,
+        apikey: String(supabaseReadKey),
+        Authorization: `Bearer ${String(supabaseReadKey)}`,
       },
       cache: "no-store",
     }
@@ -120,8 +125,8 @@ export async function PATCH(
     if (hasSupabaseConfig()) {
       const listResponse = await fetch(`${supabaseUrl}/rest/v1/events?select=id,date,location,event_code,code`, {
         headers: {
-          apikey: String(supabaseKey),
-          Authorization: `Bearer ${String(supabaseKey)}`,
+          apikey: String(supabaseReadKey),
+          Authorization: `Bearer ${String(supabaseReadKey)}`,
         },
         cache: "no-store",
       });
@@ -158,6 +163,12 @@ export async function PATCH(
   }
 
   if (hasSupabaseConfig()) {
+    if (!hasSupabaseWriteConfig()) {
+      return NextResponse.json(
+        { error: "缺少 SUPABASE_SERVICE_ROLE_KEY，无法修改活动状态" },
+        { status: 500 }
+      );
+    }
     const updated = await patchRemoteEvent(String(id), { status: nextStatus });
     if (!updated.ok) return NextResponse.json({ error: "更新失败：未匹配到活动记录，请检查活动ID" }, { status: 500 });
     const current = await fetchRemoteEventById(String(id));
@@ -204,6 +215,12 @@ export async function PUT(
   }
 
   if (hasSupabaseConfig()) {
+    if (!hasSupabaseWriteConfig()) {
+      return NextResponse.json(
+        { error: "缺少 SUPABASE_SERVICE_ROLE_KEY，无法编辑活动" },
+        { status: 500 }
+      );
+    }
     const updated = await patchRemoteEvent(String(id), patch);
     if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
     return NextResponse.json({ success: true });
@@ -222,6 +239,12 @@ export async function DELETE(
 ) {
   const { id } = await Promise.resolve(params);
   if (hasSupabaseConfig()) {
+    if (!hasSupabaseWriteConfig()) {
+      return NextResponse.json(
+        { error: "缺少 SUPABASE_SERVICE_ROLE_KEY，无法下架活动" },
+        { status: 500 }
+      );
+    }
     const updated = await patchRemoteEvent(String(id), { status: "closed" });
     if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
     return NextResponse.json({ success: true, status: "closed" });
