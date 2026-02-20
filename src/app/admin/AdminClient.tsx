@@ -81,7 +81,14 @@ export default function AdminPage() {
     const loadEvents = async () => {
       const res = await fetch('/api/events', { cache: 'no-store' });
       const data = await res.json();
-      setEvents(Array.isArray(data) ? data : []);
+      const rows = Array.isArray(data) ? data : [];
+      rows.sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+        const ta = new Date(`${a.date}T${a.time || '00:00'}`).getTime() || 0;
+        const tb = new Date(`${b.date}T${b.time || '00:00'}`).getTime() || 0;
+        return tb - ta;
+      });
+      setEvents(rows);
     };
 
     const loadRegistrations = async () => {
@@ -148,12 +155,19 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteEvent = async (id: number | string) => {
-    const ok = window.confirm('确认删除该活动？此操作不可恢复。');
+  const handleToggleEventStatus = async (id: number | string, status: 'active' | 'closed') => {
+    const isClosing = status === 'closed';
+    const ok = window.confirm(isClosing ? '确认截止该活动报名？' : '确认重新上架该活动？');
     if (!ok) return;
-    const response = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+    const response = await fetch(`/api/events/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
     if (!response.ok) return;
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    setEvents((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status } : e))
+    );
   };
 
   const handleExportCSV = () => {
@@ -448,10 +462,19 @@ export default function AdminPage() {
                   {activeEventId === String(event.id) ? '隐藏参与者' : '查看参与者'}
                 </button>
                 <button
-                  onClick={() => handleDeleteEvent(event.id)}
-                  className="flex-1 rounded-lg border border-red-500/30 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10 transition-colors"
+                  onClick={() =>
+                    handleToggleEventStatus(
+                      event.id,
+                      event.status === 'active' ? 'closed' : 'active'
+                    )
+                  }
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    event.status === 'active'
+                      ? 'border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/10'
+                      : 'border-green-500/40 text-green-300 hover:bg-green-500/10'
+                  }`}
                 >
-                  {t('admin.delete')}
+                  {event.status === 'active' ? '截止报名' : '重新上架'}
                 </button>
               </div>
               {activeEventId === String(event.id) && (

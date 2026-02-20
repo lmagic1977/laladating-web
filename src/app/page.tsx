@@ -27,15 +27,10 @@ export default function HomePage() {
     loadEvents();
   }, []);
 
-  const now = new Date();
   const activeEvents = useMemo(
     () =>
       events
         .filter((event) => event.status === 'active')
-        .filter((event) => {
-          const dt = new Date(`${event.date}T${event.time || '00:00'}`);
-          return Number.isNaN(dt.getTime()) || dt >= now;
-        })
         .sort((a, b) => {
           const ta = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
           const tb = new Date(`${b.date}T${b.time || '00:00'}`).getTime();

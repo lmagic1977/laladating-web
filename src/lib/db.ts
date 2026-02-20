@@ -151,6 +151,22 @@ export function deleteEventById(id: number): boolean {
   return next.length < events.length;
 }
 
+export function updateEventStatusById(id: number, status: "active" | "closed"): boolean {
+  if (typeof window === "undefined") {
+    const target = serverEvents.find((e) => e.id === id);
+    if (!target) return false;
+    target.status = status;
+    return true;
+  }
+
+  const events = getEvents();
+  const target = events.find((e) => e.id === id);
+  if (!target) return false;
+  target.status = status;
+  localStorage.setItem("lala_events", JSON.stringify(events));
+  return true;
+}
+
 export function getRegistrations(): Registration[] {
   if (typeof window === 'undefined') return serverRegistrations;
   const saved = localStorage.getItem('lala_registrations');

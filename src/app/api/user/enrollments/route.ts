@@ -155,6 +155,9 @@ export async function POST(request: Request) {
     });
     const eventRows = eventRes.ok ? ((await eventRes.json()) as Record<string, unknown>[]) : [];
     const event = eventRows[0] || getEvents().find((e) => String(e.id) === eventId);
+    if (String((event as Record<string, unknown> | undefined)?.status || "active") !== "active") {
+      return NextResponse.json({ error: "Registration closed for this event / 该活动已截止报名" }, { status: 400 });
+    }
     const amountText = String((event as any)?.price || "$39");
     const amountNumber = parsePriceToNumber(amountText);
     let charge: ReturnType<typeof chargeForEvent>;
@@ -216,6 +219,9 @@ export async function POST(request: Request) {
   }
 
   const localEvent = getEvents().find((e) => String(e.id) === eventId);
+  if (localEvent && localEvent.status !== "active") {
+    return NextResponse.json({ error: "Registration closed for this event / 该活动已截止报名" }, { status: 400 });
+  }
   const amountText = localEvent?.price || "$39";
   const amountNumber = parsePriceToNumber(amountText);
   let charge: ReturnType<typeof chargeForEvent>;
