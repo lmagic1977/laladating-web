@@ -81,9 +81,10 @@ async function patchRemoteEvent(id: string, patch: Record<string, unknown>) {
     });
     if (response.ok) {
       const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
-      if (Array.isArray(rows) && rows.length > 0) {
-        return { ok: true, row: rows[0] };
-      }
+      if (Array.isArray(rows) && rows.length > 0) return { ok: true, row: rows[0] };
+      // Some PostgREST/Supabase setups return 200/204 with empty body on PATCH.
+      // We still treat it as success and verify by reading the record afterward.
+      return { ok: true };
     }
   }
   return { ok: false, error: "Failed to update event" };
