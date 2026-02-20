@@ -129,7 +129,10 @@ export default function AuthPage() {
           ) : null}
           {mode === "login" ? (
             <>
-              <button className="block text-cyan-300 hover:text-cyan-200" onClick={() => setMode("register")}>
+              <button
+                className="block rounded-lg border border-pink-400/40 bg-pink-500/15 px-3 py-2 text-base font-semibold text-pink-200 hover:bg-pink-500/25 hover:text-pink-100"
+                onClick={() => setMode("register")}
+              >
                 No account? Create one / 还没有账号？去注册
               </button>
               <button className="block text-cyan-300 hover:text-cyan-200" onClick={() => setMode("forgot")}>

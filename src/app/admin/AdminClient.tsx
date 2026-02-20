@@ -39,6 +39,17 @@ interface Member {
   name?: string;
   created_at?: string;
   wallet_balance?: number;
+  profile?: {
+    age?: number;
+    job?: string;
+    interests?: string;
+    zodiac?: string;
+    height_cm?: number;
+    body_type?: string;
+    headshot_url?: string;
+    fullshot_url?: string;
+    photos?: string[];
+  } | null;
 }
 
 export default function AdminPage() {
@@ -51,6 +62,7 @@ export default function AdminPage() {
   const [memberActionLoadingId, setMemberActionLoadingId] = useState<string>('');
   const [resetPasswords, setResetPasswords] = useState<Record<string, string>>({});
   const [topupValues, setTopupValues] = useState<Record<string, string>>({});
+  const [openMemberId, setOpenMemberId] = useState<string | null>(null);
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newEvent, setNewEvent] = useState({
@@ -572,6 +584,14 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          setOpenMemberId((prev) => (prev === member.id ? null : member.id))
+                        }
+                        className="rounded-lg border border-cyan-500/30 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-500/10"
+                      >
+                        {openMemberId === member.id ? "收起资料" : "查看资料"}
+                      </button>
                       <input
                         type="number"
                         min="1"
@@ -592,6 +612,48 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
+                {openMemberId === member.id && (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="grid gap-3 text-sm md:grid-cols-2">
+                      <p>年龄: {member.profile?.age || '-'}</p>
+                      <p>工作: {member.profile?.job || '-'}</p>
+                      <p>兴趣: {member.profile?.interests || '-'}</p>
+                      <p>星座: {member.profile?.zodiac || '-'}</p>
+                      <p>身高: {member.profile?.height_cm || '-'} cm</p>
+                      <p>身材类型: {member.profile?.body_type || '-'}</p>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      <div>
+                        <p className="mb-2 text-xs text-white/60">头像</p>
+                        {member.profile?.headshot_url ? (
+                          <img src={member.profile.headshot_url} alt="headshot" className="h-20 w-20 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-20 w-20 rounded-full bg-white/10" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="mb-2 text-xs text-white/60">全身照</p>
+                        {member.profile?.fullshot_url ? (
+                          <img src={member.profile.fullshot_url} alt="fullshot" className="h-24 w-20 rounded object-cover" />
+                        ) : (
+                          <div className="h-24 w-20 rounded bg-white/10" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="mb-2 text-xs text-white/60">更多照片</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.isArray(member.profile?.photos) && member.profile?.photos?.length ? (
+                            member.profile.photos.slice(0, 6).map((url, idx) => (
+                              <img key={idx} src={url} alt={`photo-${idx}`} className="h-14 w-14 rounded object-cover" />
+                            ))
+                          ) : (
+                            <span className="text-xs text-white/50">无</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}

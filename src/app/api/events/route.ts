@@ -65,22 +65,33 @@ function createEventCode(date: string, location: string, existingCodes: Set<stri
 export async function GET() {
   try {
     if (hasSupabaseConfig()) {
-      const response = await fetch(`${supabaseUrl}/rest/v1/events?select=*`, {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/events?select=id,name,title,date,time,location,event_code,code,price,age_range,max_participants,seats,organizer_name,organizer_phone,status&order=date.asc,time.asc`,
+        {
         headers: {
           apikey: String(supabaseKey),
           Authorization: `Bearer ${String(supabaseKey)}`,
         },
-        cache: 'no-store',
-      });
+          next: { revalidate: 30 },
+        }
+      );
 
       if (response.ok) {
         const rows = (await response.json()) as Record<string, unknown>[];
-        return NextResponse.json(rows.map(mapRowToEvent));
+        return NextResponse.json(rows.map(mapRowToEvent), {
+          headers: {
+            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+          },
+        });
       }
     }
 
     const events = getEvents();
-    return NextResponse.json(events);
+    return NextResponse.json(events, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: `GET /api/events failed: ${String(error)}` },

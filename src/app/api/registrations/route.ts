@@ -66,25 +66,69 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get('event_id');
+  const eventFilter = eventId ? `&eventid=eq.${encodeURIComponent(eventId)}` : '';
 
   if (hasSupabaseConfig()) {
     try {
-      const canReadAuthUsers = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && supabaseUrl);
-      const [regRes, profileRes, authUsersRes] = await Promise.all([
-        fetch(`${supabaseUrl}/rest/v1/registrations?select=*`, {
-          headers: {
-            apikey: String(supabaseKey),
-            Authorization: `Bearer ${String(supabaseKey)}`,
-          },
-          cache: 'no-store',
-        }),
-        fetch(`${supabaseUrl}/rest/v1/user_profiles?select=*`, {
-          headers: {
-            apikey: String(supabaseKey),
-            Authorization: `Bearer ${String(supabaseKey)}`,
-          },
-          cache: 'no-store',
-        }),
+      const registrationsSelect =
+        'id,eventid,attendeeid,payment,status,createdat,name,email,phone,age,gender,looking_for,headshot_url,fullshot_url';
+      const profileSelect = 'user_id,email,name,age,headshot_url,fullshot_url';
+
+      const canReadAuthUsers =
+        Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && supabaseUrl) && isAdmin;
+      const regRequests = isAdmin
+        ? [
+            fetch(`${supabaseUrl}/rest/v1/registrations?select=${registrationsSelect}${eventFilter}`, {
+              headers: {
+                apikey: String(supabaseKey),
+                Authorization: `Bearer ${String(supabaseKey)}`,
+              },
+              cache: 'no-store',
+            }),
+          ]
+        : [
+            fetch(
+              `${supabaseUrl}/rest/v1/registrations?select=${registrationsSelect}&attendeeid=eq.${encodeURIComponent(
+                String(userSession?.userId || '')
+              )}${eventFilter}`,
+              {
+                headers: {
+                  apikey: String(supabaseKey),
+                  Authorization: `Bearer ${String(supabaseKey)}`,
+                },
+                cache: 'no-store',
+              }
+            ),
+            fetch(
+              `${supabaseUrl}/rest/v1/registrations?select=${registrationsSelect}&attendeeid=eq.${encodeURIComponent(
+                String(userSession?.email || '').toLowerCase()
+              )}${eventFilter}`,
+              {
+                headers: {
+                  apikey: String(supabaseKey),
+                  Authorization: `Bearer ${String(supabaseKey)}`,
+                },
+                cache: 'no-store',
+              }
+            ),
+          ];
+
+      const [regResponses, profileRes, authUsersRes] = await Promise.all([
+        Promise.all(regRequests),
+        fetch(
+          isAdmin
+            ? `${supabaseUrl}/rest/v1/user_profiles?select=${profileSelect}`
+            : `${supabaseUrl}/rest/v1/user_profiles?select=${profileSelect}&user_id=eq.${encodeURIComponent(
+                String(userSession?.userId || '')
+              )}`,
+          {
+            headers: {
+              apikey: String(supabaseKey),
+              Authorization: `Bearer ${String(supabaseKey)}`,
+            },
+            cache: 'no-store',
+          }
+        ),
         canReadAuthUsers
           ? fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=200`, {
               headers: {
@@ -96,7 +140,13 @@ export async function GET(request: Request) {
           : Promise.resolve(new Response('[]', { status: 200 })),
       ]);
 
-      const regRowsRaw = regRes.ok ? ((await regRes.json()) as Record<string, unknown>[]) : [];
+      const regRowsRaw = (
+        await Promise.all(
+          regResponses.map(async (res) =>
+            res.ok ? ((await res.json()) as Record<string, unknown>[]) : []
+          )
+        )
+      ).flat();
       const regRows = dedupeByUserAndEvent(regRowsRaw);
       const profileRows = profileRes.ok ? ((await profileRes.json()) as Record<string, unknown>[]) : [];
       const profileMap = new Map(profileRows.map((p) => [String(p.user_id || ''), p]));
@@ -149,10 +199,7 @@ export async function GET(request: Request) {
                 String(userSession?.email || '').toLowerCase()
           );
 
-      const filtered = eventId
-        ? roleFiltered.filter((r) => String(r.event_id) === String(eventId))
-        : roleFiltered;
-      return NextResponse.json(filtered);
+      return NextResponse.json(roleFiltered);
     } catch {
       // fall through to local fallback
     }
