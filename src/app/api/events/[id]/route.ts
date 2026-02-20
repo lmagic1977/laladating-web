@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
-import { updateEventStatusById } from '@/lib/db';
+import { NextResponse } from "next/server";
+import { getEvents, updateEventById } from "@/lib/db";
 
 function normalizeSupabaseUrl(url?: string) {
-  if (!url) return '';
+  if (!url) return "";
   const trimmed = url.trim();
-  if (!trimmed) return '';
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
   return `https://${trimmed}`;
 }
 
-const supabaseUrl = normalizeSupabaseUrl(
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-);
+const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
 const supabaseKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_ANON_KEY ||
@@ -21,41 +19,69 @@ function hasSupabaseConfig() {
   return Boolean(supabaseUrl && supabaseKey);
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } | Promise<{ id: string }> }
-) {
-  const { id } = await Promise.resolve(params);
+function randomCodePart(length: number) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < length; i += 1) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 
-  if (hasSupabaseConfig()) {
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(String(id))}`,
-      {
-        method: 'PATCH',
-        headers: {
-          apikey: String(supabaseKey),
-          Authorization: `Bearer ${String(supabaseKey)}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'closed' }),
-      }
-    );
-    if (!response.ok) {
-      const err = await response.text();
-      return NextResponse.json({ error: err || 'Failed to close event' }, { status: 500 });
-    }
-    return NextResponse.json({ success: true, status: 'closed' });
+function createEventCode(date: string, location: string, existingCodes: Set<string>) {
+  const datePart =
+    date.replace(/-/g, "").slice(0, 8) || new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const words = location
+    .toUpperCase()
+    .split(/[^A-Z0-9]+/)
+    .filter(Boolean);
+  const prefix = (words[0]?.[0] || "H") + (words[1]?.[0] || words[0]?.[1] || "B");
+  for (let i = 0; i < 20; i += 1) {
+    const code = `${prefix}-${datePart}-${randomCodePart(4)}`;
+    if (!existingCodes.has(code)) return code;
   }
+  return `${prefix}-${datePart}-${Date.now().toString().slice(-4)}`;
+}
 
-  const eventId = Number(id);
-  if (Number.isNaN(eventId)) return NextResponse.json({ error: 'Invalid event id' }, { status: 400 });
+async function patchRemoteEvent(id: string, patch: Record<string, unknown>) {
+  if (!hasSupabaseConfig()) return { ok: false, error: "Missing Supabase config" };
+  const withNewCols = patch;
+  const withLegacyCols = {
+    title: patch.name,
+    date: patch.date,
+    time: patch.time,
+    location: patch.location,
+    event_code: patch.event_code,
+    price: patch.price,
+    seats: patch.max_participants,
+    organizer_name: patch.organizer_name,
+    organizer_phone: patch.organizer_phone,
+    status: patch.status,
+  };
+  const withLegacyColsNoOrganizer = {
+    title: patch.name,
+    date: patch.date,
+    time: patch.time,
+    location: patch.location,
+    event_code: patch.event_code,
+    price: patch.price,
+    seats: patch.max_participants,
+    status: patch.status,
+  };
 
-  const updated = updateEventStatusById(eventId, 'closed');
-  if (!updated) {
-    return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+  const payloads = [withNewCols, withLegacyCols, withLegacyColsNoOrganizer];
+  for (const body of payloads) {
+    const response = await fetch(`${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        apikey: String(supabaseKey),
+        Authorization: `Bearer ${String(supabaseKey)}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(body),
+    });
+    if (response.ok) return { ok: true };
   }
-
-  return NextResponse.json({ success: true, status: 'closed' });
+  return { ok: false, error: "Failed to update event" };
 }
 
 export async function PATCH(
@@ -64,37 +90,116 @@ export async function PATCH(
 ) {
   const { id } = await Promise.resolve(params);
   const body = await request.json().catch(() => ({}));
-  const nextStatus = body?.status === 'active' ? 'active' : body?.status === 'closed' ? 'closed' : '';
-  if (!nextStatus) {
-    return NextResponse.json({ error: 'status must be active or closed' }, { status: 400 });
-  }
 
-  if (hasSupabaseConfig()) {
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(String(id))}`,
-      {
-        method: 'PATCH',
+  if (body?.action === "regenerate_code") {
+    const sourceDate = String(body?.date || "");
+    const sourceLocation = String(body?.location || "");
+
+    if (hasSupabaseConfig()) {
+      const listResponse = await fetch(`${supabaseUrl}/rest/v1/events?select=id,date,location,event_code,code`, {
         headers: {
           apikey: String(supabaseKey),
           Authorization: `Bearer ${String(supabaseKey)}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=representation',
         },
-        body: JSON.stringify({ status: nextStatus }),
-      }
-    );
-    if (!response.ok) {
-      const err = await response.text();
-      return NextResponse.json({ error: err || 'Failed to update event status' }, { status: 500 });
+        cache: "no-store",
+      });
+      const rows = listResponse.ok ? ((await listResponse.json()) as Record<string, unknown>[]) : [];
+      const existingCodes = new Set(
+        rows
+          .map((row) => String(row.event_code || row.code || ""))
+          .filter(Boolean)
+      );
+      const current = rows.find((row) => String(row.id) === String(id));
+      const nextCode = createEventCode(
+        sourceDate || String(current?.date || ""),
+        sourceLocation || String(current?.location || ""),
+        existingCodes
+      );
+      const updated = await patchRemoteEvent(String(id), { event_code: nextCode });
+      if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
+      return NextResponse.json({ success: true, event_code: nextCode });
     }
+
+    const localEvents = getEvents();
+    const current = localEvents.find((item) => String(item.id) === String(id));
+    if (!current) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    const existingCodes = new Set(localEvents.map((item) => String(item.event_code || "")).filter(Boolean));
+    const nextCode = createEventCode(sourceDate || current.date, sourceLocation || current.location, existingCodes);
+    const updated = updateEventById(Number(id), { event_code: nextCode });
+    if (!updated) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    return NextResponse.json({ success: true, event_code: nextCode });
+  }
+
+  const nextStatus = body?.status === "active" ? "active" : body?.status === "closed" ? "closed" : "";
+  if (!nextStatus) {
+    return NextResponse.json({ error: "status must be active or closed" }, { status: 400 });
+  }
+
+  if (hasSupabaseConfig()) {
+    const updated = await patchRemoteEvent(String(id), { status: nextStatus });
+    if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
     return NextResponse.json({ success: true, status: nextStatus });
   }
 
   const eventId = Number(id);
-  if (Number.isNaN(eventId)) return NextResponse.json({ error: 'Invalid event id' }, { status: 400 });
-  const updated = updateEventStatusById(eventId, nextStatus);
-  if (!updated) {
-    return NextResponse.json({ error: 'Event not found' }, { status: 404 });
-  }
+  if (Number.isNaN(eventId)) return NextResponse.json({ error: "Invalid event id" }, { status: 400 });
+  const updated = updateEventById(eventId, { status: nextStatus });
+  if (!updated) return NextResponse.json({ error: "Event not found" }, { status: 404 });
   return NextResponse.json({ success: true, status: nextStatus });
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } | Promise<{ id: string }> }
+) {
+  const { id } = await Promise.resolve(params);
+  const body = await request.json().catch(() => ({}));
+
+  const nextStatus: "active" | "closed" = body?.status === "closed" ? "closed" : "active";
+  const patch = {
+    name: String(body?.name || ""),
+    date: String(body?.date || ""),
+    time: String(body?.time || ""),
+    location: String(body?.location || ""),
+    event_code: String(body?.event_code || body?.eventCode || ""),
+    price: String(body?.price || ""),
+    age_range: String(body?.age_range || body?.ageRange || ""),
+    max_participants: Number(body?.max_participants || body?.maxParticipants || 20),
+    organizer_name: String(body?.organizer_name || body?.organizerName || ""),
+    organizer_phone: String(body?.organizer_phone || body?.organizerPhone || ""),
+    status: nextStatus,
+  };
+
+  if (!patch.name || !patch.date || !patch.time || !patch.location || !patch.price || !patch.age_range) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  if (hasSupabaseConfig()) {
+    const updated = await patchRemoteEvent(String(id), patch);
+    if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
+    return NextResponse.json({ success: true });
+  }
+
+  const eventId = Number(id);
+  if (Number.isNaN(eventId)) return NextResponse.json({ error: "Invalid event id" }, { status: 400 });
+  const localUpdated = updateEventById(eventId, patch);
+  if (!localUpdated) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  return NextResponse.json(localUpdated);
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } | Promise<{ id: string }> }
+) {
+  const { id } = await Promise.resolve(params);
+  if (hasSupabaseConfig()) {
+    const updated = await patchRemoteEvent(String(id), { status: "closed" });
+    if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
+    return NextResponse.json({ success: true, status: "closed" });
+  }
+  const eventId = Number(id);
+  if (Number.isNaN(eventId)) return NextResponse.json({ error: "Invalid event id" }, { status: 400 });
+  const localUpdated = updateEventById(eventId, { status: "closed" });
+  if (!localUpdated) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  return NextResponse.json({ success: true, status: "closed" });
 }

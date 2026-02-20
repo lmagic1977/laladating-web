@@ -167,6 +167,54 @@ export function updateEventStatusById(id: number, status: "active" | "closed"): 
   return true;
 }
 
+export function updateEventById(
+  id: number,
+  patch: Partial<
+    Pick<
+      Event,
+      | "name"
+      | "date"
+      | "time"
+      | "location"
+      | "event_code"
+      | "price"
+      | "age_range"
+      | "max_participants"
+      | "organizer_name"
+      | "organizer_phone"
+      | "status"
+    >
+  >
+): Event | null {
+  const applyPatch = (target: Event) => {
+    if (patch.name !== undefined) target.name = patch.name;
+    if (patch.date !== undefined) target.date = patch.date;
+    if (patch.time !== undefined) target.time = patch.time;
+    if (patch.location !== undefined) target.location = patch.location;
+    if (patch.event_code !== undefined) target.event_code = patch.event_code;
+    if (patch.price !== undefined) target.price = patch.price;
+    if (patch.age_range !== undefined) target.age_range = patch.age_range;
+    if (patch.max_participants !== undefined) target.max_participants = patch.max_participants;
+    if (patch.organizer_name !== undefined) target.organizer_name = patch.organizer_name;
+    if (patch.organizer_phone !== undefined) target.organizer_phone = patch.organizer_phone;
+    if (patch.status !== undefined) target.status = patch.status;
+  };
+
+  if (typeof window === "undefined") {
+    const target = serverEvents.find((e) => e.id === id);
+    if (!target) return null;
+    applyPatch(target);
+    return target;
+  }
+
+  const events = getEvents();
+  const target = events.find((e) => e.id === id);
+  if (!target) return null;
+  applyPatch(target);
+  localStorage.setItem("lala_events", JSON.stringify(events));
+  return target;
+}
+
 export function getRegistrations(): Registration[] {
   if (typeof window === 'undefined') return serverRegistrations;
   const saved = localStorage.getItem('lala_registrations');
