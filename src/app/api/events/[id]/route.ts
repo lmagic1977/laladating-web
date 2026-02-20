@@ -112,25 +112,32 @@ async function fetchRemoteEventById(id: string) {
 }
 
 async function fetchRemoteEventByCode(eventCode: string) {
-  const response = await fetch(
+  const urls = [
     `${supabaseUrl}/rest/v1/events?event_code=eq.${encodeURIComponent(eventCode)}&select=id,status,event_code,code&limit=1`,
-    {
+    `${supabaseUrl}/rest/v1/events?code=eq.${encodeURIComponent(eventCode)}&select=id,status,event_code,code&limit=1`,
+  ];
+  for (const url of urls) {
+    const response = await fetch(url, {
       headers: {
         apikey: String(supabaseReadKey),
         Authorization: `Bearer ${String(supabaseReadKey)}`,
       },
       cache: "no-store",
-    }
-  );
-  if (!response.ok) return null;
-  const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
-  return rows[0] || null;
+    });
+    if (!response.ok) continue;
+    const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
+    if (rows[0]) return rows[0];
+  }
+  return null;
 }
 
 async function patchRemoteEventByCode(eventCode: string, patch: Record<string, unknown>) {
-  const response = await fetch(
+  const urls = [
     `${supabaseUrl}/rest/v1/events?event_code=eq.${encodeURIComponent(eventCode)}`,
-    {
+    `${supabaseUrl}/rest/v1/events?code=eq.${encodeURIComponent(eventCode)}`,
+  ];
+  for (const url of urls) {
+    const response = await fetch(url, {
       method: "PATCH",
       headers: {
         apikey: String(supabaseWriteKey),
@@ -139,9 +146,12 @@ async function patchRemoteEventByCode(eventCode: string, patch: Record<string, u
         Prefer: "return=representation",
       },
       body: JSON.stringify(patch),
-    }
-  );
-  return response.ok;
+    });
+    if (!response.ok) continue;
+    const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
+    if (rows.length > 0) return true;
+  }
+  return false;
 }
 
 async function patchRemoteEventByNameDateTime(
