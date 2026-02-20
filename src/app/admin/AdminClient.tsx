@@ -205,7 +205,8 @@ export default function AdminPage() {
       body: JSON.stringify({ status: next }),
     });
     if (!response.ok) {
-      alert('更新状态失败');
+      const text = await response.text();
+      alert(`更新状态失败: ${text}`);
       return;
     }
     await loadEvents();

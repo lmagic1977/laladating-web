@@ -72,26 +72,18 @@ export async function GET() {
           apikey: String(supabaseKey),
           Authorization: `Bearer ${String(supabaseKey)}`,
         },
-          next: { revalidate: 30 },
+          cache: 'no-store',
         }
       );
 
       if (response.ok) {
         const rows = (await response.json()) as Record<string, unknown>[];
-        return NextResponse.json(rows.map(mapRowToEvent), {
-          headers: {
-            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
-          },
-        });
+        return NextResponse.json(rows.map(mapRowToEvent));
       }
     }
 
     const events = getEvents();
-    return NextResponse.json(events, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
-      },
-    });
+    return NextResponse.json(events);
   } catch (error) {
     return NextResponse.json(
       { error: `GET /api/events failed: ${String(error)}` },
