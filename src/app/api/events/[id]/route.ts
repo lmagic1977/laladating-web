@@ -79,9 +79,30 @@ async function patchRemoteEvent(id: string, patch: Record<string, unknown>) {
       },
       body: JSON.stringify(body),
     });
-    if (response.ok) return { ok: true };
+    if (response.ok) {
+      const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
+      if (Array.isArray(rows) && rows.length > 0) {
+        return { ok: true, row: rows[0] };
+      }
+    }
   }
   return { ok: false, error: "Failed to update event" };
+}
+
+async function fetchRemoteEventById(id: string) {
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/events?id=eq.${encodeURIComponent(id)}&select=id,status,event_code,code&limit=1`,
+    {
+      headers: {
+        apikey: String(supabaseKey),
+        Authorization: `Bearer ${String(supabaseKey)}`,
+      },
+      cache: "no-store",
+    }
+  );
+  if (!response.ok) return null;
+  const rows = (await response.json().catch(() => [])) as Array<Record<string, unknown>>;
+  return rows[0] || null;
 }
 
 export async function PATCH(
@@ -137,7 +158,14 @@ export async function PATCH(
 
   if (hasSupabaseConfig()) {
     const updated = await patchRemoteEvent(String(id), { status: nextStatus });
-    if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: 500 });
+    if (!updated.ok) return NextResponse.json({ error: "更新失败：未匹配到活动记录，请检查活动ID" }, { status: 500 });
+    const current = await fetchRemoteEventById(String(id));
+    if (!current || String(current.status || "") !== nextStatus) {
+      return NextResponse.json(
+        { error: "状态未成功写入数据库，请检查 events 表的 status 字段和类型" },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ success: true, status: nextStatus });
   }
 
