@@ -157,7 +157,7 @@ export default function AdminPage() {
 
   const handleToggleEventStatus = async (id: number | string, status: 'active' | 'closed') => {
     const isClosing = status === 'closed';
-    const ok = window.confirm(isClosing ? '确认截止该活动报名？' : '确认重新上架该活动？');
+    const ok = window.confirm(isClosing ? '确认下架该活动？前台将不可见。' : '确认重新上架该活动？');
     if (!ok) return;
     const response = await fetch(`/api/events/${id}`, {
       method: 'PATCH',
@@ -474,7 +474,7 @@ export default function AdminPage() {
                       : 'border-green-500/40 text-green-300 hover:bg-green-500/10'
                   }`}
                 >
-                  {event.status === 'active' ? '截止报名' : '重新上架'}
+                  {event.status === 'active' ? '下架活动' : '重新上架'}
                 </button>
               </div>
               {activeEventId === String(event.id) && (

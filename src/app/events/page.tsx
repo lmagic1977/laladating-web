@@ -34,7 +34,7 @@ export default function EventsPage() {
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        {events.map((event) => (
+        {events.filter((event) => event.status === 'active').map((event) => (
           <div key={event.id} className="neon-card p-5">
             <div className="text-xs uppercase text-cyan-300">
               {event.status === 'active' ? t('events.open') : t('events.full')}
@@ -53,7 +53,9 @@ export default function EventsPage() {
             </a>
           </div>
         ))}
-        {!events.length && <div className="text-white/60">{t('common.loading')}</div>}
+        {!events.filter((event) => event.status === 'active').length && (
+          <div className="text-white/60">暂无上架活动</div>
+        )}
       </div>
     </div>
   );
