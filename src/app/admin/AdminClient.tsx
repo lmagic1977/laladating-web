@@ -228,6 +228,38 @@ export default function AdminPage() {
     }
   };
 
+  const handleDuplicateEvent = async (event: Event) => {
+    const ok = window.confirm(`确认复制活动：${event.name} ?`);
+    if (!ok) return;
+
+    const copyPayload = {
+      name: `${event.name} (复制)`,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      price: event.price,
+      ageRange: event.age_range,
+      organizerName: event.organizer_name || "",
+      organizerPhone: event.organizer_phone || "",
+      maxParticipants: event.max_participants || 20,
+      status: "closed",
+    };
+
+    const response = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(copyPayload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      alert(data?.error || '复制活动失败');
+      return;
+    }
+    const created = data as Event;
+    setEvents((prev) => [created, ...prev]);
+    alert('活动复制成功（默认已下架，可手动上架）');
+  };
+
   const handleResetPassword = async (member: Member) => {
     const newPassword = String(resetPasswords[member.id] || '').trim();
     if (!newPassword || newPassword.length < 6) {
@@ -475,6 +507,12 @@ export default function AdminPage() {
                   }`}
                 >
                   {event.status === 'active' ? '下架活动' : '重新上架'}
+                </button>
+                <button
+                  onClick={() => handleDuplicateEvent(event)}
+                  className="flex-1 rounded-lg border border-cyan-500/40 px-3 py-2 text-sm text-cyan-200 hover:bg-cyan-500/10 transition-colors"
+                >
+                  复制活动
                 </button>
               </div>
               {activeEventId === String(event.id) && (
