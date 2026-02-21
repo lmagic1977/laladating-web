@@ -75,7 +75,7 @@ export function LangToggle() {
         }`}
         aria-label="Switch to Chinese"
       >
-        中文
+        Chinese
       </button>
       <button
         onClick={() => setLocale('en')}

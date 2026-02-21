@@ -5,6 +5,12 @@ import { useState } from "react";
 type Mode = "login" | "register" | "forgot";
 
 export default function AuthPage() {
+  const toEnglish = (message: unknown) => {
+    const text = String(message || "");
+    const parts = text.split(/\s*\/\s*/);
+    const english = parts.find((p) => /[A-Za-z]/.test(p));
+    return (english || text).trim();
+  };
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,9 +35,9 @@ export default function AuthPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const message = String(data?.error || "Auth failed");
+        const message = toEnglish(data?.error || "Auth failed");
         if (message.toLowerCase().includes("rate limit")) {
-          setError("注册请求太频繁，请先登录或稍后重试 / Too many signup attempts, try login first.");
+          setError("Too many signup attempts. Try login first or retry later.");
         } else {
           setError(message);
         }
@@ -39,7 +45,7 @@ export default function AuthPage() {
       }
 
       if (mode === "forgot") {
-        setSuccess("重置密码邮件已发送，请检查邮箱 / Reset email sent.");
+        setSuccess("Reset email sent. Please check your inbox.");
         return;
       }
 
@@ -54,10 +60,10 @@ export default function AuthPage() {
       <div className="neon-card p-6">
         <h1 className="text-2xl font-semibold">
           {mode === "login"
-            ? "User Login / 用户登录"
+            ? "User Login"
             : mode === "register"
-            ? "Create Account / 注册账号"
-            : "Forgot Password / 找回密码"}
+            ? "Create Account"
+            : "Forgot Password"}
         </h1>
         <p className="mt-2 text-sm text-white/60">
           {mode === "login"
@@ -70,7 +76,7 @@ export default function AuthPage() {
         <form onSubmit={onSubmit} className="mt-5 space-y-4">
           {mode === "register" ? (
             <div>
-              <label className="mb-2 block text-sm text-white/70">Name / 姓名</label>
+              <label className="mb-2 block text-sm text-white/70">Name</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -80,7 +86,7 @@ export default function AuthPage() {
           ) : null}
 
           <div>
-            <label className="mb-2 block text-sm text-white/70">Email / 邮箱</label>
+            <label className="mb-2 block text-sm text-white/70">Email</label>
             <input
               type="email"
               value={email}
@@ -92,7 +98,7 @@ export default function AuthPage() {
 
           {mode !== "forgot" ? (
             <div>
-              <label className="mb-2 block text-sm text-white/70">Password / 密码</label>
+              <label className="mb-2 block text-sm text-white/70">Password</label>
               <input
                 type="password"
                 value={password}
@@ -114,17 +120,17 @@ export default function AuthPage() {
             {loading
               ? "Please wait..."
               : mode === "login"
-              ? "Sign in / 登录"
+              ? "Sign in"
               : mode === "register"
-              ? "Create account / 注册"
-              : "Send reset email / 发送重置邮件"}
+              ? "Create account"
+              : "Send reset email"}
           </button>
         </form>
 
         <div className="mt-4 space-y-2 text-sm">
           {mode !== "login" ? (
             <button className="text-cyan-300 hover:text-cyan-200" onClick={() => setMode("login")}>
-              Back to login / 返回登录
+              Back to login
             </button>
           ) : null}
           {mode === "login" ? (
@@ -133,10 +139,10 @@ export default function AuthPage() {
                 className="block rounded-lg border border-pink-400/40 bg-pink-500/15 px-3 py-2 text-base font-semibold text-pink-200 hover:bg-pink-500/25 hover:text-pink-100"
                 onClick={() => setMode("register")}
               >
-                No account? Create one / 还没有账号？去注册
+                No account? Create one
               </button>
               <button className="block text-cyan-300 hover:text-cyan-200" onClick={() => setMode("forgot")}>
-                Forgot password? / 忘记密码
+                Forgot password?
               </button>
             </>
           ) : null}

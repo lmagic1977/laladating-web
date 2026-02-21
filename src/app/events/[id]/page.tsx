@@ -32,7 +32,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       const sessionRes = await fetch('/api/user/session', { cache: 'no-store' });
       const sessionData = await sessionRes.json().catch(() => ({}));
       if (!sessionData?.authenticated) {
-        setAuthError('请先登录后查看活动详情 / Please login first');
+        setAuthError('Please login first');
         setAuthReady(true);
         setTimeout(() => {
           window.location.href = '/auth';
@@ -47,7 +47,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       const eventRows = await eventRes.json();
       const regRows = await regRes.json().catch(() => []);
       if (!regRes.ok) {
-        setAuthError('无权限查看报名详情 / Permission denied');
+        setAuthError('Permission denied');
         setAuthReady(true);
         return;
       }
@@ -60,7 +60,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       setAuthReady(true);
     };
     load().catch(() => {
-      setAuthError('加载失败，请稍后重试 / Failed to load');
+      setAuthError('Failed to load. Please try again.');
       setAuthReady(true);
     });
   }, [params.id]);
@@ -79,7 +79,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
   }
 
   if (!event) {
-    return <div className="text-white/70">活动加载中...</div>;
+    return <div className="text-white/70">Loading event...</div>;
   }
 
   return (
@@ -87,15 +87,15 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       <div className="neon-card p-6">
         <h1 className="text-3xl font-semibold text-pink-300">{event.name}</h1>
         <p className="mt-3 text-white/70">
-          时间：{event.date} {event.time}
+          Time: {event.date} {event.time}
         </p>
-        <p className="mt-1 text-white/70">地点：{event.location}</p>
-        <p className="mt-1 text-white/70">组织人：{event.organizer_name || '待补充'}</p>
-        <p className="mt-1 text-white/70">联系电话：{event.organizer_phone || '待补充'}</p>
+        <p className="mt-1 text-white/70">Location: {event.location}</p>
+        <p className="mt-1 text-white/70">Organizer: {event.organizer_name || 'TBD'}</p>
+        <p className="mt-1 text-white/70">Phone: {event.organizer_phone || 'TBD'}</p>
       </div>
 
       <div className="neon-card p-6">
-        <h2 className="text-2xl font-semibold text-pink-300">参与者名单</h2>
+        <h2 className="text-2xl font-semibold text-pink-300">Participants</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {participants.map((person) => (
             <div key={person.id} className="rounded-xl border border-white/10 p-4 text-center">
@@ -111,7 +111,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
               <p className="mt-3 text-white">{person.name}</p>
             </div>
           ))}
-          {!participants.length && <p className="text-white/60">暂无报名用户</p>}
+          {!participants.length && <p className="text-white/60">No participants yet</p>}
         </div>
       </div>
     </div>

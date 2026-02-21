@@ -70,6 +70,12 @@ type RequiredProfileField =
   | "fullshot_url";
 
 export default function AccountPage() {
+  const toEnglish = (message: unknown) => {
+    const text = String(message || "");
+    const parts = text.split(/\s*\/\s*/);
+    const english = parts.find((p) => /[A-Za-z]/.test(p));
+    return (english || text).trim();
+  };
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("");
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -172,18 +178,18 @@ export default function AccountPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error || "Payment failed");
+        setError(toEnglish(data?.error || "Payment failed"));
         return;
       }
       await load();
-      alert("Payment success and registration completed / 支付成功，报名已完成");
+      alert("Payment successful and registration completed");
     } finally {
       setPayingId("");
     }
   };
 
   const onCancelEnrollment = async (eventId: string | number) => {
-    const ok = window.confirm('确认取消报名并退回额度吗？');
+    const ok = window.confirm('Confirm cancellation and refund credits?');
     if (!ok) return;
     setError("");
     setCancelingId(String(eventId));
@@ -193,11 +199,11 @@ export default function AccountPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error || "Cancel failed");
+        setError(toEnglish(data?.error || "Cancel failed"));
         return;
       }
       await load();
-      alert("报名已取消，额度已退回 / Enrollment cancelled and credit refunded");
+      alert("Enrollment canceled and credits refunded");
     } finally {
       setCancelingId("");
     }
@@ -212,7 +218,7 @@ export default function AccountPage() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data?.error || "Purchase failed");
+      setError(toEnglish(data?.error || "Purchase failed"));
       return;
     }
     await load();
@@ -247,14 +253,14 @@ export default function AccountPage() {
     setProfileSuccess("");
 
     const fieldLabels: Record<string, string> = {
-      age: "年龄 Age",
-      job: "工作 Job",
-      interests: "兴趣爱好 Interests",
-      zodiac: "星座 Zodiac",
-      height_cm: "身高 Height",
-      body_type: "身材类型 Body Type",
-      headshot_url: "头像照片 Headshot",
-      fullshot_url: "全身照片 Full Body Photo",
+      age: "Age",
+      job: "Job",
+      interests: "Interests",
+      zodiac: "Zodiac",
+      height_cm: "Height",
+      body_type: "Body Type",
+      headshot_url: "Headshot",
+      fullshot_url: "Full Body Photo",
     };
 
     const missing = Object.entries(fieldLabels)
@@ -263,13 +269,13 @@ export default function AccountPage() {
     const nextFieldErrors: Partial<Record<RequiredProfileField, string>> = {};
     (Object.keys(fieldLabels) as RequiredProfileField[]).forEach((key) => {
       if (!String((profile as unknown as Record<string, unknown>)[key] ?? "").trim()) {
-        nextFieldErrors[key] = `${fieldLabels[key]} 必填`;
+        nextFieldErrors[key] = `${fieldLabels[key]} is required`;
       }
     });
     setProfileFieldErrors(nextFieldErrors);
 
     if (missing.length) {
-      setProfileError(`请先填写完整资料: ${missing.join("、")} / Missing required fields: ${missing.join(", ")}`);
+      setProfileError(`Missing required fields: ${missing.join(", ")}`);
       return;
     }
 
@@ -282,7 +288,7 @@ export default function AccountPage() {
       });
       const data = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok) {
-        const raw = typeof data?.error === "string" ? data.error : "Save profile failed";
+        const raw = toEnglish(typeof data?.error === "string" ? data.error : "Save profile failed");
         if (raw.includes("Missing required profile fields:")) {
           const keys = raw
             .replace("Missing required profile fields:", "")
@@ -292,17 +298,17 @@ export default function AccountPage() {
           const apiFieldErrors: Partial<Record<RequiredProfileField, string>> = {};
           keys.forEach((k: string) => {
             const key = k as RequiredProfileField;
-            if (fieldLabels[key]) apiFieldErrors[key] = `${fieldLabels[key]} 必填`;
+            if (fieldLabels[key]) apiFieldErrors[key] = `${fieldLabels[key]} is required`;
           });
           setProfileFieldErrors(apiFieldErrors);
-          setProfileError(`资料不完整，请补充: ${labels.join("、")} / Please complete: ${labels.join(", ")}`);
+          setProfileError(`Incomplete profile. Please complete: ${labels.join(", ")}`);
         } else {
-          setProfileError(`${raw}。请稍后重试，或联系管理员。 / Please try again or contact admin.`);
+          setProfileError(`${raw}. Please try again or contact admin.`);
         }
         return;
       }
       setProfileFieldErrors({});
-      setProfileSuccess("个人资料已保存 / Profile saved");
+      setProfileSuccess("Profile saved");
     } finally {
       setSavingProfile(false);
     }
@@ -313,15 +319,15 @@ export default function AccountPage() {
     setPasswordSuccess("");
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("请填写完整密码信息 / Please fill all password fields");
+      setPasswordError("Please fill all password fields");
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError("新密码至少 6 位 / New password must be at least 6 characters");
+      setPasswordError("New password must be at least 6 characters");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError("两次输入的新密码不一致 / New passwords do not match");
+      setPasswordError("New passwords do not match");
       return;
     }
 
@@ -334,13 +340,13 @@ export default function AccountPage() {
       });
       const data = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok) {
-        setPasswordError(String(data?.error || "修改密码失败 / Failed to change password"));
+        setPasswordError(toEnglish(data?.error || "Failed to change password"));
         return;
       }
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setPasswordSuccess("密码修改成功 / Password changed");
+      setPasswordSuccess("Password changed");
     } finally {
       setChangingPassword(false);
     }
@@ -361,14 +367,14 @@ export default function AccountPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-pink-300">My Account / 我的账户</h1>
+          <h1 className="text-3xl font-semibold text-pink-300">My Account</h1>
           <p className="mt-1 text-sm text-white/60">{email}</p>
         </div>
         <button
           onClick={onLogout}
           className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10"
         >
-          Logout / 退出
+          Logout
         </button>
       </div>
 
@@ -377,7 +383,7 @@ export default function AccountPage() {
       ) : null}
 
       <div className="neon-card p-5">
-        <h2 className="text-lg font-semibold">Profile / 个人信息</h2>
+        <h2 className="text-lg font-semibold">Profile</h2>
         {profileError ? (
           <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-2 text-sm text-red-200">
             {profileError}
@@ -396,7 +402,7 @@ export default function AccountPage() {
                 setProfile({ ...profile, age: e.target.value });
                 setProfileFieldErrors((prev) => ({ ...prev, age: undefined }));
               }}
-              placeholder="年龄 Age"
+              placeholder="Age"
               className={getInputClass("age")}
             />
             {profileFieldErrors.age ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.age}</p> : null}
@@ -408,7 +414,7 @@ export default function AccountPage() {
                 setProfile({ ...profile, job: e.target.value });
                 setProfileFieldErrors((prev) => ({ ...prev, job: undefined }));
               }}
-              placeholder="工作 Job"
+              placeholder="Job"
               className={getInputClass("job")}
             />
             {profileFieldErrors.job ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.job}</p> : null}
@@ -420,7 +426,7 @@ export default function AccountPage() {
                 setProfile({ ...profile, interests: e.target.value });
                 setProfileFieldErrors((prev) => ({ ...prev, interests: undefined }));
               }}
-              placeholder="兴趣爱好 Interests"
+              placeholder="Interests"
               className={getInputClass("interests")}
             />
             {profileFieldErrors.interests ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.interests}</p> : null}
@@ -432,7 +438,7 @@ export default function AccountPage() {
                 setProfile({ ...profile, zodiac: e.target.value });
                 setProfileFieldErrors((prev) => ({ ...prev, zodiac: undefined }));
               }}
-              placeholder="星座 Zodiac"
+              placeholder="Zodiac"
               className={getInputClass("zodiac")}
             />
             {profileFieldErrors.zodiac ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.zodiac}</p> : null}
@@ -444,7 +450,7 @@ export default function AccountPage() {
                 setProfile({ ...profile, height_cm: e.target.value });
                 setProfileFieldErrors((prev) => ({ ...prev, height_cm: undefined }));
               }}
-              placeholder="身高(cm) Height"
+              placeholder="Height (cm)"
               className={getInputClass("height_cm")}
             />
             {profileFieldErrors.height_cm ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.height_cm}</p> : null}
@@ -456,7 +462,7 @@ export default function AccountPage() {
                 setProfile({ ...profile, body_type: e.target.value });
                 setProfileFieldErrors((prev) => ({ ...prev, body_type: undefined }));
               }}
-              placeholder="身材类型 Body Type"
+              placeholder="Body Type"
               className={getInputClass("body_type")}
             />
             {profileFieldErrors.body_type ? <p className="mt-1 text-xs text-red-300">{profileFieldErrors.body_type}</p> : null}
@@ -464,7 +470,7 @@ export default function AccountPage() {
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>
-            <p className="mb-2 text-sm text-white/70">头像照片</p>
+            <p className="mb-2 text-sm text-white/70">Headshot</p>
             <input
               type="file"
               accept="image/*"
@@ -478,7 +484,7 @@ export default function AccountPage() {
             {profile.headshot_url ? <img src={profile.headshot_url} alt="headshot" className="mt-2 h-16 w-16 rounded-full object-cover" /> : null}
           </div>
           <div>
-            <p className="mb-2 text-sm text-white/70">全身照片</p>
+            <p className="mb-2 text-sm text-white/70">Full Body Photo</p>
             <input
               type="file"
               accept="image/*"
@@ -492,7 +498,7 @@ export default function AccountPage() {
             {profile.fullshot_url ? <img src={profile.fullshot_url} alt="fullshot" className="mt-2 h-20 w-16 rounded object-cover" /> : null}
           </div>
           <div>
-            <p className="mb-2 text-sm text-white/70">更多照片（最多6张）</p>
+            <p className="mb-2 text-sm text-white/70">More Photos (up to 6)</p>
             <input type="file" accept="image/*" multiple onChange={onUploadMulti} className="text-sm" />
             <div className="mt-2 flex flex-wrap gap-2">
               {profile.photos.map((p, idx) => (
@@ -506,32 +512,32 @@ export default function AccountPage() {
           disabled={savingProfile}
           className="mt-4 rounded-full px-4 py-2 text-xs font-semibold neon-button disabled:opacity-60"
         >
-          {savingProfile ? "Saving..." : "保存资料 / Save Profile"}
+          {savingProfile ? "Saving..." : "Save Profile"}
         </button>
       </div>
 
       <div className="neon-card p-5">
-        <h2 className="text-lg font-semibold">Password / 修改密码</h2>
+        <h2 className="text-lg font-semibold">Password</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <input
             type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="当前密码 Current Password"
+            placeholder="Current Password"
             className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
           />
           <input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="新密码 New Password"
+            placeholder="New Password"
             className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
           />
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="确认新密码 Confirm Password"
+            placeholder="Confirm New Password"
             className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
           />
         </div>
@@ -550,35 +556,35 @@ export default function AccountPage() {
           disabled={changingPassword}
           className="mt-4 rounded-full px-4 py-2 text-xs font-semibold neon-button disabled:opacity-60"
         >
-          {changingPassword ? "Saving..." : "修改密码 / Change Password"}
+          {changingPassword ? "Saving..." : "Change Password"}
         </button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="neon-card p-5">
-          <h2 className="text-lg font-semibold">Wallet / 钱包</h2>
+          <h2 className="text-lg font-semibold">Wallet</h2>
           <p className="mt-2 text-3xl font-bold text-cyan-300">${wallet.balance.toFixed(2)}</p>
-          <p className="mt-4 text-sm text-white/70">充值由管理员操作 / Top-up is managed by admin only</p>
+          <p className="mt-4 text-sm text-white/70">Top-up is managed by admin only</p>
         </div>
         <div className="neon-card p-5">
-          <h2 className="text-lg font-semibold">My Passes / 我的套餐</h2>
+          <h2 className="text-lg font-semibold">My Passes</h2>
           <div className="mt-2 space-y-2 text-sm text-white/80">
             {wallet.passes.length ? wallet.passes.map((p, idx) => (
               <div key={`${p.packageId}-${idx}`} className="flex items-center justify-between">
                 <span>{p.title}</span>
                 <span className="text-pink-300">{p.remaining}/{p.total}</span>
               </div>
-            )) : <p className="text-white/50">No passes yet / 暂无套餐</p>}
+            )) : <p className="text-white/50">No passes yet</p>}
           </div>
         </div>
       </div>
 
       <div className="neon-card p-5">
-        <h2 className="text-lg font-semibold">Pass Packages / 套餐购买</h2>
+        <h2 className="text-lg font-semibold">Pass Packages</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {packages.map((pkg) => (
             <div key={pkg.id} className="rounded-xl border border-white/15 p-4">
-              <p className="font-semibold">{pkg.titleZh}</p>
+              <p className="font-semibold">{pkg.title}</p>
               <p className="text-sm text-white/60">{pkg.title}</p>
               <p className="mt-2 text-sm">Credits: {pkg.credits}</p>
               <p className="text-sm text-white/50 line-through">${pkg.originalPrice}</p>
@@ -587,7 +593,7 @@ export default function AccountPage() {
                 onClick={() => onBuyPackage(pkg.id)}
                 className="mt-3 rounded-full px-4 py-2 text-xs font-semibold neon-button"
               >
-                Buy / 购买
+                Buy
               </button>
             </div>
           ))}
@@ -595,7 +601,7 @@ export default function AccountPage() {
       </div>
 
       <div>
-        <h2 className="mb-4 text-lg font-semibold">Select Event & Join / 选择场次并报名</h2>
+        <h2 className="mb-4 text-lg font-semibold">Select Event & Join</h2>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -615,20 +621,20 @@ export default function AccountPage() {
                   {joined ? (
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-300">
-                        Joined / 已报名
+                        Joined
                       </span>
                       <a
                         href={`/events/${event.id}`}
                         className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
                       >
-                        报名详情
+                        View details
                       </a>
                       <button
                         onClick={() => onCancelEnrollment(event.id)}
                         disabled={cancelingId === String(event.id)}
                         className="rounded-full border border-red-400/40 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-60"
                       >
-                        {cancelingId === String(event.id) ? "Cancelling..." : "取消报名"}
+                        {cancelingId === String(event.id) ? "Cancelling..." : "Cancel Enrollment"}
                       </button>
                     </div>
                   ) : (
@@ -640,8 +646,8 @@ export default function AccountPage() {
                       {payingId === String(event.id)
                         ? "Processing..."
                         : isFreePrice(event.price)
-                        ? "Join Free / 免费报名"
-                        : "Pay & Join / 支付并报名"}
+                        ? "Join Free"
+                        : "Pay & Join"}
                     </button>
                   )}
                 </div>
@@ -651,7 +657,7 @@ export default function AccountPage() {
       </div>
 
       <div className="neon-card p-5">
-        <h2 className="text-lg font-semibold">My Orders / 我的订单</h2>
+        <h2 className="text-lg font-semibold">My Orders</h2>
         <div className="mt-3 space-y-2 text-sm text-white/70">
           {enrollments.length ? (
             enrollments.map((item) => (
@@ -661,7 +667,7 @@ export default function AccountPage() {
               </div>
             ))
           ) : (
-            <p className="text-white/50">No paid enrollments yet / 暂无支付报名</p>
+            <p className="text-white/50">No paid enrollments yet</p>
           )}
         </div>
       </div>

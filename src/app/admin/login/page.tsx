@@ -32,13 +32,13 @@ export default function AdminLoginPage() {
   return (
     <div className="mx-auto max-w-md">
       <div className="neon-card p-6">
-        <h1 className="text-2xl font-semibold">Admin Login / 管理员登录</h1>
+        <h1 className="text-2xl font-semibold">Admin Login</h1>
         <p className="mt-2 text-sm text-white/60">
           Enter admin email and password to access dashboard.
         </p>
         <form onSubmit={onSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="mb-2 block text-sm text-white/70">Email / 邮箱</label>
+            <label className="mb-2 block text-sm text-white/70">Email</label>
             <input
               type="email"
               value={email}
@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm text-white/70">Password / 密码</label>
+            <label className="mb-2 block text-sm text-white/70">Password</label>
             <input
               type="password"
               value={password}
@@ -63,7 +63,7 @@ export default function AdminLoginPage() {
             disabled={loading}
             className="rounded-full px-5 py-2 text-sm font-semibold neon-button disabled:opacity-60"
           >
-            {loading ? "Signing in..." : "Sign in / 登录"}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
       </div>

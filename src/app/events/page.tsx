@@ -49,12 +49,12 @@ export default function EventsPage() {
               href={`/events/${event.id}`}
               className="mt-4 inline-block rounded-full border border-white/20 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
             >
-              报名详情
+              View details
             </a>
           </div>
         ))}
         {!events.filter((event) => event.status === 'active').length && (
-          <div className="text-white/60">暂无上架活动</div>
+          <div className="text-white/60">No published events yet</div>
         )}
       </div>
     </div>

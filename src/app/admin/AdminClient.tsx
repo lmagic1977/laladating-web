@@ -67,6 +67,12 @@ const EMPTY_FORM = {
 
 export default function AdminPage() {
   const { t } = useLanguage();
+  const toEnglish = (message: unknown) => {
+    const text = String(message || '');
+    const parts = text.split(/\s*\/\s*/);
+    const english = parts.find((p) => /[A-Za-z]/.test(p));
+    return (english || text).trim();
+  };
   const [activeTab, setActiveTab] = useState<TabType>('events');
   const [events, setEvents] = useState<EventItem[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -172,7 +178,7 @@ export default function AdminPage() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      alert(data?.error || (editingEventId ? '更新活动失败' : '创建活动失败'));
+      alert(toEnglish(data?.error || (editingEventId ? 'Failed to update event' : 'Failed to create event')));
       return;
     }
     await loadEvents();
@@ -197,7 +203,7 @@ export default function AdminPage() {
 
   const handleToggleEventStatus = async (event: EventItem) => {
     const next = event.status === 'active' ? 'closed' : 'active';
-    const ok = window.confirm(next === 'closed' ? '确认下架该活动？前台将不可见。' : '确认上架该活动？');
+    const ok = window.confirm(next === 'closed' ? 'Unpublish this event? It will be hidden from frontend.' : 'Publish this event?');
     if (!ok) return;
     const response = await fetch(`/api/events/${event.id}`, {
       method: 'PATCH',
@@ -212,14 +218,14 @@ export default function AdminPage() {
     });
     if (!response.ok) {
       const text = await response.text();
-      alert(`更新状态失败: ${text}`);
+      alert(`Failed to update status: ${text}`);
       return;
     }
     await loadEvents();
   };
 
   const handleGenerateEventCode = async (event: EventItem) => {
-    const ok = window.confirm('确认为该活动重新生成活动代码？');
+    const ok = window.confirm('Regenerate event code for this event?');
     if (!ok) return;
     const response = await fetch(`/api/events/${event.id}`, {
       method: 'PATCH',
@@ -228,7 +234,7 @@ export default function AdminPage() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      alert(data?.error || '生成活动代码失败');
+      alert(toEnglish(data?.error || 'Failed to generate event code'));
       return;
     }
     await loadEvents();
@@ -238,32 +244,32 @@ export default function AdminPage() {
       } catch {
         // ignore clipboard errors
       }
-      alert(`新活动代码: ${data.event_code}`);
+      alert(`New event code: ${data.event_code}`);
     }
   };
 
   const handleCopyEventCode = async (code?: string) => {
     const value = String(code || '').trim();
     if (!value) {
-      alert('该活动暂无代码');
+      alert('No code for this event yet');
       return;
     }
     try {
       await navigator.clipboard.writeText(value);
-      alert(`已复制活动代码: ${value}`);
+      alert(`Copied event code: ${value}`);
     } catch {
-      alert('复制失败，请手动复制');
+      alert('Copy failed. Please copy manually.');
     }
   };
 
   const handleDuplicateEvent = async (event: EventItem) => {
-    const ok = window.confirm(`确认复制活动：${event.name} ?`);
+    const ok = window.confirm(`Duplicate event: ${event.name}?`);
     if (!ok) return;
     const response = await fetch('/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: `${event.name} (复制)`,
+        name: `${event.name} (Copy)`,
         date: event.date,
         time: event.time,
         location: event.location,
@@ -277,15 +283,15 @@ export default function AdminPage() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      alert(data?.error || '复制活动失败');
+      alert(toEnglish(data?.error || 'Failed to duplicate event'));
       return;
     }
     await loadEvents();
-    alert('活动复制成功（默认已下架，可手动上架）');
+    alert('Event duplicated successfully (default status: unpublished)');
   };
 
   const handleForceCancel = async (registrationId: number) => {
-    const ok = window.confirm('确认取消该用户资格并退回额度？');
+    const ok = window.confirm('Cancel this participant and refund credits?');
     if (!ok) return;
     setCancelingRegistrationId(String(registrationId));
     try {
@@ -296,7 +302,7 @@ export default function AdminPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        alert(data?.error || '取消失败');
+        alert(toEnglish(data?.error || 'Cancellation failed'));
         return;
       }
       await loadRegistrations();
@@ -308,10 +314,10 @@ export default function AdminPage() {
   const handleResetPassword = async (member: Member) => {
     const newPassword = String(resetPasswords[member.id] || '').trim();
     if (!newPassword || newPassword.length < 6) {
-      alert('新密码至少6位');
+      alert('New password must be at least 6 characters');
       return;
     }
-    const ok = window.confirm(`确认重设该会员密码？\n${member.email}`);
+    const ok = window.confirm(`Reset password for this member?\n${member.email}`);
     if (!ok) return;
     setMemberActionLoadingId(member.id);
     try {
@@ -322,11 +328,11 @@ export default function AdminPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data?.error || '重设密码失败');
+        alert(toEnglish(data?.error || 'Failed to reset password'));
         return;
       }
       setResetPasswords((prev) => ({ ...prev, [member.id]: '' }));
-      alert('密码已重设');
+      alert('Password reset completed');
     } finally {
       setMemberActionLoadingId('');
     }
@@ -335,10 +341,10 @@ export default function AdminPage() {
   const handleMemberTopup = async (member: Member) => {
     const amount = Number(topupValues[member.id] || 0);
     if (!Number.isFinite(amount) || amount <= 0) {
-      alert('充值金额无效');
+      alert('Invalid top-up amount');
       return;
     }
-    const ok = window.confirm(`确认给会员充值 $${amount} ?\n${member.email}`);
+    const ok = window.confirm(`Top up member wallet by $${amount}?\n${member.email}`);
     if (!ok) return;
     setMemberActionLoadingId(member.id);
     try {
@@ -349,12 +355,12 @@ export default function AdminPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data?.error || '充值失败');
+        alert(toEnglish(data?.error || 'Top-up failed'));
         return;
       }
       await loadMembers();
       setTopupValues((prev) => ({ ...prev, [member.id]: '' }));
-      alert('充值成功');
+      alert('Top-up successful');
     } finally {
       setMemberActionLoadingId('');
     }
@@ -382,24 +388,24 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-5">
-        <MetricCard title="活动总数" value={stats.totalEvents} tone="pink" />
-        <MetricCard title="上架中" value={stats.activeEvents} tone="green" />
-        <MetricCard title="已下架" value={stats.closedEvents} tone="yellow" />
-        <MetricCard title="有效报名" value={stats.registrations} tone="cyan" />
-        <MetricCard title="会员总数" value={stats.members} tone="purple" />
+        <MetricCard title="Total Events" value={stats.totalEvents} tone="pink" />
+        <MetricCard title="Published" value={stats.activeEvents} tone="green" />
+        <MetricCard title="Unpublished" value={stats.closedEvents} tone="yellow" />
+        <MetricCard title="Active Registrations" value={stats.registrations} tone="cyan" />
+        <MetricCard title="Total Members" value={stats.members} tone="purple" />
       </div>
 
       <div className="neon-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            <TabButton active={activeTab === 'events'} onClick={() => setActiveTab('events')} label="活动管理" />
-            <TabButton active={activeTab === 'registrations'} onClick={() => setActiveTab('registrations')} label={`报名名单 (${registrations.length})`} />
-            <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} label={`会员管理 (${members.length})`} />
+            <TabButton active={activeTab === 'events'} onClick={() => setActiveTab('events')} label="Event Management" />
+            <TabButton active={activeTab === 'registrations'} onClick={() => setActiveTab('registrations')} label={`Registrations (${registrations.length})`} />
+            <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} label={`Members (${members.length})`} />
           </div>
           <div className="flex gap-2">
             {activeTab === 'events' && (
               <button onClick={() => setShowCreateForm((v) => !v)} className="rounded-full px-4 py-2 text-sm font-semibold neon-button">
-                {showCreateForm ? '取消' : editingEventId ? '编辑活动' : '创建活动'}
+                {showCreateForm ? 'Cancel' : editingEventId ? 'Edit Event' : 'Create Event'}
               </button>
             )}
             <button onClick={handleLogout} className="rounded-full border border-white/30 px-4 py-2 text-sm text-white/80 hover:bg-white/10">
@@ -416,7 +422,7 @@ export default function AdminPage() {
               <input
                 value={eventKeyword}
                 onChange={(e) => setEventKeyword(e.target.value)}
-                placeholder="搜索活动名/地点/代码"
+                placeholder="Search event name/location/code"
                 className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
               />
               <select
@@ -424,25 +430,25 @@ export default function AdminPage() {
                 onChange={(e) => setEventStatusFilter(e.target.value as 'all' | 'active' | 'closed')}
                 className="rounded-lg border border-white/20 bg-white/10 px-3 py-2"
               >
-                <option value="all">全部状态</option>
-                <option value="active">已上架</option>
-                <option value="closed">已下架</option>
+                <option value="all">All Statuses</option>
+                <option value="active">Published</option>
+                <option value="closed">Unpublished</option>
               </select>
-              <div className="text-sm text-white/60 flex items-center">共 {filteredEvents.length} 条活动</div>
+              <div className="text-sm text-white/60 flex items-center">{filteredEvents.length} events</div>
             </div>
           </div>
 
           {showCreateForm && (
             <form onSubmit={handleCreateOrUpdateEvent} className="neon-card p-6 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Input label="活动名称" value={newEvent.name} onChange={(v) => setNewEvent({ ...newEvent, name: v })} required />
-                <Input label="日期" type="date" value={newEvent.date} onChange={(v) => setNewEvent({ ...newEvent, date: v })} required />
-                <Input label="时间" type="time" value={newEvent.time} onChange={(v) => setNewEvent({ ...newEvent, time: v })} required />
-                <Input label="地点" value={newEvent.location} onChange={(v) => setNewEvent({ ...newEvent, location: v })} required />
-                <Input label="价格" value={newEvent.price} onChange={(v) => setNewEvent({ ...newEvent, price: v })} required />
-                <Input label="年龄范围" value={newEvent.ageRange} onChange={(v) => setNewEvent({ ...newEvent, ageRange: v })} required />
-                <Input label="组织人" value={newEvent.organizerName} onChange={(v) => setNewEvent({ ...newEvent, organizerName: v })} />
-                <Input label="组织人电话" value={newEvent.organizerPhone} onChange={(v) => setNewEvent({ ...newEvent, organizerPhone: v })} />
+                <Input label="Event Name" value={newEvent.name} onChange={(v) => setNewEvent({ ...newEvent, name: v })} required />
+                <Input label="Date" type="date" value={newEvent.date} onChange={(v) => setNewEvent({ ...newEvent, date: v })} required />
+                <Input label="Time" type="time" value={newEvent.time} onChange={(v) => setNewEvent({ ...newEvent, time: v })} required />
+                <Input label="Location" value={newEvent.location} onChange={(v) => setNewEvent({ ...newEvent, location: v })} required />
+                <Input label="Price" value={newEvent.price} onChange={(v) => setNewEvent({ ...newEvent, price: v })} required />
+                <Input label="Age Range" value={newEvent.ageRange} onChange={(v) => setNewEvent({ ...newEvent, ageRange: v })} required />
+                <Input label="Organizer" value={newEvent.organizerName} onChange={(v) => setNewEvent({ ...newEvent, organizerName: v })} />
+                <Input label="Organizer Phone" value={newEvent.organizerPhone} onChange={(v) => setNewEvent({ ...newEvent, organizerPhone: v })} />
               </div>
               <div className="flex gap-2">
                 <button
@@ -450,17 +456,17 @@ export default function AdminPage() {
                   data-status="active"
                   className="rounded-full px-5 py-2 text-sm font-semibold neon-button"
                 >
-                  {editingEventId ? '保存并上架' : '创建并上架'}
+                  {editingEventId ? 'Save and Publish' : 'Create and Publish'}
                 </button>
                 <button
                   type="submit"
                   data-status="closed"
                   className="rounded-full border border-yellow-500/40 px-4 py-2 text-sm text-yellow-300 hover:bg-yellow-500/10"
                 >
-                  保存为下架
+                  Save as Unpublished
                 </button>
                 <button type="button" onClick={resetForm} className="rounded-full border border-white/20 px-4 py-2 text-sm hover:bg-white/10">
-                  取消
+                  Cancel
                 </button>
               </div>
             </form>
@@ -477,17 +483,17 @@ export default function AdminPage() {
                     <p className="mt-2 text-xs text-cyan-300">Code: {event.event_code || '-'}</p>
                   </div>
                   <span className={`rounded-full px-2 py-1 text-xs ${event.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-white/15 text-white/70'}`}>
-                    {event.status === 'active' ? '上架' : '下架'}
+                    {event.status === 'active' ? 'Published' : 'Unpublished'}
                   </span>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                  <ActionBtn label="编辑" onClick={() => handleEditEvent(event)} />
-                  <ActionBtn label={event.status === 'active' ? '下架' : '上架'} onClick={() => handleToggleEventStatus(event)} tone={event.status === 'active' ? 'warn' : 'ok'} />
-                  <ActionBtn label="复制活动" onClick={() => handleDuplicateEvent(event)} />
-                  <ActionBtn label="生成代码" onClick={() => handleGenerateEventCode(event)} />
-                  <ActionBtn label="复制代码" onClick={() => handleCopyEventCode(event.event_code)} />
+                  <ActionBtn label="Edit" onClick={() => handleEditEvent(event)} />
+                  <ActionBtn label={event.status === 'active' ? 'Unpublish' : 'Publish'} onClick={() => handleToggleEventStatus(event)} tone={event.status === 'active' ? 'warn' : 'ok'} />
+                  <ActionBtn label="Duplicate" onClick={() => handleDuplicateEvent(event)} />
+                  <ActionBtn label="Generate Code" onClick={() => handleGenerateEventCode(event)} />
+                  <ActionBtn label="Copy Code" onClick={() => handleCopyEventCode(event.event_code)} />
                   <ActionBtn
-                    label={activeEventId === String(event.id) ? '收起参与者' : '查看参与者'}
+                    label={activeEventId === String(event.id) ? 'Hide Participants' : 'View Participants'}
                     onClick={() => setActiveEventId((prev) => (prev === String(event.id) ? null : String(event.id)))}
                   />
                 </div>
@@ -507,12 +513,12 @@ export default function AdminPage() {
                             disabled={cancelingRegistrationId === String(r.id)}
                             className="rounded-md border border-red-500/30 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
                           >
-                            {cancelingRegistrationId === String(r.id) ? '处理中...' : '取消资格'}
+                            {cancelingRegistrationId === String(r.id) ? 'Processing...' : 'Remove'}
                           </button>
                         </div>
                       ))}
                     {!registrations.some((r) => String(r.event_id) === String(event.id) && !String(r.status || '').startsWith('cancelled')) && (
-                      <p className="text-sm text-white/50">暂无参与者</p>
+                      <p className="text-sm text-white/50">No participants yet</p>
                     )}
                   </div>
                 )}
@@ -525,18 +531,18 @@ export default function AdminPage() {
       {activeTab === 'registrations' && (
         <div className="space-y-3">
           <button onClick={handleExportCSV} className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/80 hover:bg-white/10">
-            导出 CSV
+            Export CSV
           </button>
           <div className="neon-card overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-white/5 text-white/70">
                 <tr>
-                  <th className="px-4 py-3 text-left">姓名</th>
-                  <th className="px-4 py-3 text-left">邮箱</th>
-                  <th className="px-4 py-3 text-left">电话</th>
-                  <th className="px-4 py-3 text-left">年龄</th>
-                  <th className="px-4 py-3 text-left">状态</th>
-                  <th className="px-4 py-3 text-left">操作</th>
+                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">Email</th>
+                  <th className="px-4 py-3 text-left">Phone</th>
+                  <th className="px-4 py-3 text-left">Age</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -553,7 +559,7 @@ export default function AdminPage() {
                         disabled={cancelingRegistrationId === String(reg.id)}
                         className="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
                       >
-                        {cancelingRegistrationId === String(reg.id) ? '处理中...' : '强制取消并退回'}
+                        {cancelingRegistrationId === String(reg.id) ? 'Processing...' : 'Force cancel + refund'}
                       </button>
                     </td>
                   </tr>
@@ -572,7 +578,7 @@ export default function AdminPage() {
                 <div>
                   <p className="font-semibold">{member.name || member.email}</p>
                   <p className="text-sm text-white/60">{member.email}</p>
-                  <p className="mt-1 text-sm text-cyan-300">钱包余额: ${Number(member.wallet_balance || 0).toFixed(2)}</p>
+                  <p className="mt-1 text-sm text-cyan-300">Wallet Balance: ${Number(member.wallet_balance || 0).toFixed(2)}</p>
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
                   <div className="flex items-center gap-2">
@@ -580,7 +586,7 @@ export default function AdminPage() {
                       type="password"
                       value={resetPasswords[member.id] || ''}
                       onChange={(e) => setResetPasswords((prev) => ({ ...prev, [member.id]: e.target.value }))}
-                      placeholder="新密码(至少6位)"
+                      placeholder="New password (min 6 chars)"
                       className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm"
                     />
                     <button
@@ -588,7 +594,7 @@ export default function AdminPage() {
                       disabled={memberActionLoadingId === member.id}
                       className="rounded-lg border border-white/20 px-3 py-2 text-xs hover:bg-white/10 disabled:opacity-50"
                     >
-                      重设密码
+                      Reset Password
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
@@ -597,7 +603,7 @@ export default function AdminPage() {
                       min="1"
                       value={topupValues[member.id] || ''}
                       onChange={(e) => setTopupValues((prev) => ({ ...prev, [member.id]: e.target.value }))}
-                      placeholder="充值金额"
+                      placeholder="Top-up amount"
                       className="w-28 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm"
                     />
                     <button
@@ -605,13 +611,13 @@ export default function AdminPage() {
                       disabled={memberActionLoadingId === member.id}
                       className="rounded-lg border border-pink-500/30 px-3 py-2 text-xs text-pink-300 hover:bg-pink-500/10 disabled:opacity-50"
                     >
-                      充值
+                      Top Up
                     </button>
                     <button
                       onClick={() => setOpenMemberId((prev) => (prev === member.id ? null : member.id))}
                       className="rounded-lg border border-cyan-500/30 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-500/10"
                     >
-                      {openMemberId === member.id ? '收起资料' : '查看资料'}
+                      {openMemberId === member.id ? 'Hide Profile' : 'View Profile'}
                     </button>
                   </div>
                 </div>
@@ -620,25 +626,25 @@ export default function AdminPage() {
               {openMemberId === member.id && (
                 <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
                   <div className="grid gap-2 text-sm md:grid-cols-2">
-                    <p>年龄: {member.profile?.age || '-'}</p>
-                    <p>工作: {member.profile?.job || '-'}</p>
-                    <p>兴趣: {member.profile?.interests || '-'}</p>
-                    <p>星座: {member.profile?.zodiac || '-'}</p>
-                    <p>身高: {member.profile?.height_cm || '-'} cm</p>
-                    <p>身材类型: {member.profile?.body_type || '-'}</p>
+                    <p>Age: {member.profile?.age || '-'}</p>
+                    <p>Job: {member.profile?.job || '-'}</p>
+                    <p>Interests: {member.profile?.interests || '-'}</p>
+                    <p>Zodiac: {member.profile?.zodiac || '-'}</p>
+                    <p>Height: {member.profile?.height_cm || '-'} cm</p>
+                    <p>Body Type: {member.profile?.body_type || '-'}</p>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <ImageBox title="头像" src={member.profile?.headshot_url} rounded />
-                    <ImageBox title="全身照" src={member.profile?.fullshot_url} />
+                    <ImageBox title="Headshot" src={member.profile?.headshot_url} rounded />
+                    <ImageBox title="Full Body" src={member.profile?.fullshot_url} />
                     <div>
-                      <p className="mb-2 text-xs text-white/60">更多照片</p>
+                      <p className="mb-2 text-xs text-white/60">More Photos</p>
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(member.profile?.photos) && member.profile?.photos?.length ? (
                           member.profile.photos.slice(0, 6).map((url, idx) => (
                             <img key={idx} src={url} alt={`photo-${idx}`} className="h-14 w-14 rounded object-cover" />
                           ))
                         ) : (
-                          <span className="text-xs text-white/50">无</span>
+                          <span className="text-xs text-white/50">None</span>
                         )}
                       </div>
                     </div>
@@ -647,7 +653,7 @@ export default function AdminPage() {
               )}
             </div>
           ))}
-          {!members.length && <div className="neon-card p-6 text-white/60">暂无会员</div>}
+          {!members.length && <div className="neon-card p-6 text-white/60">No members yet</div>}
         </div>
       )}
     </div>

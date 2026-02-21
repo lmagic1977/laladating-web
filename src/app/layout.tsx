@@ -18,8 +18,8 @@ export const metadata: Metadata = {
     'Huntington Beach speed dating',
     'singles event',
     'LALA speed dating',
-    '相亲活动',
-    '极速相亲',
+    'dating meetup',
+    'singles social',
   ],
   alternates: {
     canonical: '/',

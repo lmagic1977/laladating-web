@@ -61,7 +61,7 @@ export default function HomePage() {
               href="/account"
               className="rounded-full border border-white/25 px-5 py-2.5 text-sm font-semibold text-white/85 hover:bg-white/10"
             >
-              Join From Account / 去我的账户报名
+              Join From Account
             </a>
           </div>
 
@@ -118,14 +118,14 @@ export default function HomePage() {
                 </span>
                 <span className="text-pink-300">{event.price}</span>
               </div>
-              <p className="mt-3 text-xs text-cyan-300">查看详情与报名名单 / View details</p>
+              <p className="mt-3 text-xs text-cyan-300">View details and participants</p>
             </a>
           ))}
           {!activeEvents.length && <div className="text-white/60">{t('common.loading')}</div>}
         </div>
         {activeEvents.length > 0 ? (
           <p className="mt-3 text-xs text-white/50">
-            需登录后查看活动报名人员信息 / Login required for participant list.
+            Login required to view participant list.
           </p>
         ) : null}
       </section>
@@ -133,15 +133,15 @@ export default function HomePage() {
       <section className="grid gap-4 md:grid-cols-3">
         <div className="neon-card p-3">
           <img src="/artwork/speed-date-chat.svg" alt="Quick chat round" className="w-full rounded-xl" />
-          <p className="mt-3 text-sm text-white/70">Quick 5-minute talks / 快速5分钟交流</p>
+          <p className="mt-3 text-sm text-white/70">Quick 5-minute talks</p>
         </div>
         <div className="neon-card p-3">
           <img src="/artwork/speed-date-party.svg" alt="Match and vote" className="w-full rounded-xl" />
-          <p className="mt-3 text-sm text-white/70">Match & vote in each round / 每轮心动投票</p>
+          <p className="mt-3 text-sm text-white/70">Match and vote each round</p>
         </div>
         <div className="neon-card p-3">
           <img src="/artwork/speed-date-hero.svg" alt="Speed dating stage" className="w-full rounded-xl" />
-          <p className="mt-3 text-sm text-white/70">Hosted events every week / 每周组织不同主题</p>
+          <p className="mt-3 text-sm text-white/70">Hosted events every week</p>
         </div>
       </section>
 

@@ -14,6 +14,12 @@ type OnsiteEvent = {
 
 export default function OnsitePage() {
   const { t } = useLanguage();
+  const toEnglish = (message: unknown) => {
+    const text = String(message || '');
+    const parts = text.split(/\s*\/\s*/);
+    const english = parts.find((p) => /[A-Za-z]/.test(p));
+    return (english || text).trim();
+  };
   const [eventCode, setEventCode] = useState('');
   const [joined, setJoined] = useState(false);
   const [joinError, setJoinError] = useState('');
@@ -46,7 +52,7 @@ export default function OnsitePage() {
   const handleJoin = async () => {
     const code = eventCode.trim();
     if (!code) {
-      setJoinError('请输入活动代码 / Please enter event code');
+      setJoinError('Please enter event code');
       return;
     }
 
@@ -60,8 +66,7 @@ export default function OnsitePage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const message = String(data?.error || '无法进入现场 / Unable to enter onsite');
-        setJoinError(message);
+        setJoinError(toEnglish(data?.error || 'Unable to enter onsite'));
         if (response.status === 401) {
           window.location.href = '/auth';
         }
